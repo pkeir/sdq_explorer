@@ -1,6 +1,8 @@
 #include <iostream>
 #include <sstream>
-#include <unistd.h>
+//#include <unistd.h>
+#include <chrono>
+#include <thread>
 //#include <giblib/giblib.h>
 #include <Imlib2.h>
 
@@ -58,15 +60,40 @@ int main(int argc, char *argv[])
   imlib_image_set_format("png");
   imlib_save_image(filename_in);
 #endif
-  for (int i = 0; i < 16; i++) {
+  const int nimages = 32;
+  for (int i = 0; i < nimages; i++) {
     imlib_context_set_drawable(root);
     img_arr[i] = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
-    usleep(30);
+    //im->data = malloc(width * height * sizeof(DATA32)); // ARGB32
+    //See $HOME/apps/imlib2-1.4.4/src/lib/api.c
+//    DATA32 *data = img_arr[i]->data;
+    imlib_context_set_image(img_arr[i]);
+    //DATA32 const *data = imlib_image_get_data_for_reading_only();
+    int run=0;
+    DATA32 *data = imlib_image_get_data();
+    /*for (int ii = 0; ii < rh; ii++) {
+      run=0;
+      for (int jj = 0; jj < rw; jj++) {
+        //data[ii*rw+jj] = data[ii*rw+jj] & (0xff << 24); // alpha
+        if (data[ii*rw+jj] == data[ii*rw+jj-1])
+          run++;
+        else {
+          if (run > 20)  {
+            printf("[%d] %d (%d)\n", ii, run, data[ii*rw+jj-1]);
+            for (int i = 0; i < 4; i++) data[ii*rw+jj-i] = 0;
+          }
+          run = 0;
+        }
+      }
+    }
+    printf("\n");*/
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
   }
 
-  for (int i = 0; i < 16; i++) {
-    char filename_in[] = "blah?.png";
-    filename_in[4]='a'+i;
+  for (int i = 0; i < nimages; i++) {
+    char filename_in[] = "images/blah?.png";
+    filename_in[11]='a'+i; // n.b. element 11 is the question mark: ?
+    printf("%s\n", filename_in);
     imlib_context_set_image(img_arr[i]);
     imlib_image_set_format("png");
     imlib_save_image(filename_in);
