@@ -9,8 +9,8 @@ DAPHNE="DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]"
 #XID=`xdotool search --limit 1 --name "scrot"`   # The scrot directory window. 
 #XID=`xdotool search --limit 1 --name "DAPHNE"`   # The scrot directory window. 
 #display images/sdq.png &
-XID=$(xdotool search --name "$DAPHNE")
-#XID=$(xdotool search --name "ImageMagick")
+#XID=$(xdotool search --name "$DAPHNE")
+XID=$(xdotool search --name "ImageMagick")
 #xdotool windowmap --sync $XID
 #echo $XID
 
