@@ -14,45 +14,78 @@ enum icon { nothing, left, right, up, down, button };
 
 icon find_icon(DATA32 *data, int width, int height)
 {
-  const DATA32 arrow_blue = -16711704;
-  const DATA32 arrow_red  = -65536;
-  unsigned red_run, red_start, blue_run, blue_start;
-
+  const DATA32 arrow_red    = -65536;
+  const DATA32 arrow_blue   = -16711704;
+  const DATA32 button_green = -16711936;
+  unsigned red_run   = 0, red_start;
+  unsigned blue_run  = 0, blue_start;
+  unsigned green_run = 0, green_start;
+  bool     arrow_tail_up_or_down = false;
+  
   for (int i = 0; i < height; i++) {
     for (int j = 1; j < width; j++) {
       //data[i*width+j] = data[i*width+j] & (0xff << 24); // alpha
       DATA32 curr = data[i*width+j  ];
       DATA32 prev = data[i*width+j-1];
       if      (curr==arrow_red) {
-        if (curr!=prev) { red_run = 1;  red_start = j;  }
-        else            { red_run++;                    }
+        if (curr!=prev) { red_run = 1;   red_start  = j;  }
+        else            { red_run++;                      }
       }
       else if (curr==arrow_blue) {
-        if (curr!=prev) { blue_run = 1; blue_start = j; }
-        else            { blue_run++;                   }
+        if (curr!=prev) { blue_run = 1;  blue_start  = j; }
+        else            { blue_run++;                     }
+      }
+      else if (curr==button_green) {
+        if (curr!=prev) { green_run = 1; green_start = j; }
+        else            { green_run++;                    }
       }
 //      else {
 //red==4, then blue > 80 === right
 //blue > 80, then red==4 === left
-//red==1, blue==30 == up or down  21/30/16 4x 
+//red==1, blue==31 == up or down  21/30/16 4x 
 //          if (run > 10)  {
 //      }
     }
-    if ((red_run==4)&&(blue_run>80)&&(red_start==blue_start-(red_run+1)))
-      return right;
+    if ((red_run==4)&&(blue_run>80)) // left or right
+    {
+      if      (red_start==blue_start-(red_run+1))
+        return right;
+      else if (blue_start==red_start-(blue_run+1))
+        return left;
+    }
+    if (red_run==31)
+      arrow_tail_up_or_down = true;
+    if ((red_run==1)&&(blue_run==31))
+    {
+      if (arrow_tail_up_or_down)
+        return down;
+      else
+        return up;
+    }
+    if (green_run > 40)
+      return button;
 
-        if (red_run > 0)  {
-          printf("[%d,%d,%d] (%s)\n", i, red_run, red_start, "red");
+    if (red_run > 0)  {
+      printf("[%d,%2d,%d] (%5s) : ", i, red_run, red_start, "red");
 //          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
-          red_run=0;
-        }
-        if (blue_run > 0)  {
-          printf("[%d,%d,%d] (%s)\n", i, blue_run, blue_start, "blue");
+      red_run=0;
+      if (blue_run == 0) printf("\n");
+    }
+    if (blue_run > 0)  {
+      printf("[%d,%2d,%d] (%5s) : ", i, blue_run, blue_start, "blue");
 //          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
-          blue_run=0;
-        }
+      blue_run=0;
+      printf("\n");
+    }
+    if (green_run > 0) {
+      printf("[%d,%2d,%d] (%5s) : ", i, green_run, green_start, "green");
+//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
+      green_run = 0;
+      printf("\n");
+    }
   }
   printf("\n");
+
   return nothing;
 }
 
@@ -66,6 +99,10 @@ int main(int argc, char *argv[])
   Visual     *vis     = NULL;
   Screen     *scr     = NULL;
   int         rx, ry, rw, rh;
+
+  printf("%x\n", -65536);    // ffff0000
+  printf("%x\n", -16711704); // ff00ffe8
+  printf("%x\n", -16711936); // ff00ff00
 
   if (argc != 2)
   {
@@ -121,6 +158,14 @@ int main(int argc, char *argv[])
     icon x = find_icon(data,rw,rh); 
     if (x==right)
       printf("right\n");
+    else if (x==left)
+      printf("left\n");
+    else if (x==up)
+      printf("up\n");
+    else if (x==down)
+      printf("down\n");
+    else if (x==button)
+      printf("button\n");
   
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
   }
