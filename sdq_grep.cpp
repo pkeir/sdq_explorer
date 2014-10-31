@@ -10,6 +10,52 @@
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -o sdq_grep
 // Ubuntu giblib seems to conflict with libsdl1.2-dev
 
+enum icon { nothing, left, right, up, down, button };
+
+icon find_icon(DATA32 *data, int width, int height)
+{
+  const DATA32 arrow_blue = -16711704;
+  const DATA32 arrow_red  = -65536;
+  unsigned red_run, red_start, blue_run, blue_start;
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 1; j < width; j++) {
+      //data[i*width+j] = data[i*width+j] & (0xff << 24); // alpha
+      DATA32 curr = data[i*width+j  ];
+      DATA32 prev = data[i*width+j-1];
+      if      (curr==arrow_red) {
+        if (curr!=prev) { red_run = 1;  red_start = j;  }
+        else            { red_run++;                    }
+      }
+      else if (curr==arrow_blue) {
+        if (curr!=prev) { blue_run = 1; blue_start = j; }
+        else            { blue_run++;                   }
+      }
+//      else {
+//red==4, then blue > 80 === right
+//blue > 80, then red==4 === left
+//red==1, blue==30 == up or down  21/30/16 4x 
+//          if (run > 10)  {
+//      }
+    }
+    if ((red_run==4)&&(blue_run>80)&&(red_start==blue_start-(red_run+1)))
+      return right;
+
+        if (red_run > 0)  {
+          printf("[%d,%d,%d] (%s)\n", i, red_run, red_start, "red");
+//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
+          red_run=0;
+        }
+        if (blue_run > 0)  {
+          printf("[%d,%d,%d] (%s)\n", i, blue_run, blue_start, "blue");
+//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
+          blue_run=0;
+        }
+  }
+  printf("\n");
+  return nothing;
+}
+
 int main(int argc, char *argv[])
 {
   Imlib_Image image   = NULL; // ImlibImage (no underscore)
@@ -19,7 +65,7 @@ int main(int argc, char *argv[])
   Display    *disp    = NULL;
   Visual     *vis     = NULL;
   Screen     *scr     = NULL;
-  int rx, ry, rw, rh;
+  int         rx, ry, rw, rh;
 
   if (argc != 2)
   {
@@ -60,7 +106,7 @@ int main(int argc, char *argv[])
   imlib_image_set_format("png");
   imlib_save_image(filename_in);
 #endif
-  const int nimages = 32;
+  const int nimages = 1;
   for (int i = 0; i < nimages; i++) {
     imlib_context_set_drawable(root);
     img_arr[i] = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
@@ -69,24 +115,13 @@ int main(int argc, char *argv[])
 //    DATA32 *data = img_arr[i]->data;
     imlib_context_set_image(img_arr[i]);
     //DATA32 const *data = imlib_image_get_data_for_reading_only();
-    int run=0;
     DATA32 *data = imlib_image_get_data();
-    /*for (int ii = 0; ii < rh; ii++) {
-      run=0;
-      for (int jj = 0; jj < rw; jj++) {
-        //data[ii*rw+jj] = data[ii*rw+jj] & (0xff << 24); // alpha
-        if (data[ii*rw+jj] == data[ii*rw+jj-1])
-          run++;
-        else {
-          if (run > 20)  {
-            printf("[%d] %d (%d)\n", ii, run, data[ii*rw+jj-1]);
-            for (int i = 0; i < 4; i++) data[ii*rw+jj-i] = 0;
-          }
-          run = 0;
-        }
-      }
-    }
-    printf("\n");*/
+    //printf("w:%d h:%d\n", rw,rh);
+    // 640x480
+    icon x = find_icon(data,rw,rh); 
+    if (x==right)
+      printf("right\n");
+  
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
   }
 
