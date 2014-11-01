@@ -1,22 +1,72 @@
 #include <iostream>
 #include <sstream>
+#include <cstring>     // memset
 //#include <unistd.h>
 #include <chrono>
 #include <thread>
 //#include <giblib/giblib.h>
 #include <Imlib2.h>
+//#include <X11/keysym.h> // For sending keypresses
+// usr/include/X11/keysymdef.h
 
-// g++ -std=c++11 sdq_grep.cpp -lX11 -lgiblib -lImlib2 -o sdq_grep
-// g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -o sdq_grep
-// Ubuntu giblib seems to conflict with libsdl1.2-dev
+extern "C" {
+#include <xdo.h> // sudo apt-get install libxdo-dev
+};
+// xdo.h assumes a C compiler, so add the extern "C" stuff yourself:
+/*
+#define CURRENTWINDOW (0)
+#define SEARCH_NAME (1UL << 2)
+struct xdo_search_t;
+struct xdo_t;
+extern "C" xdo_t *xdo_new(const char *display);
+extern "C" void   xdo_free(xdo_t *xdo);
+extern "C" int    xdo_send_keysequence_window(
+                         const xdo_t *xdo, Window window,
+                         const char *keysequence, useconds_t delay
+);
+extern "C" int    xdo_search_windows(
+                         const xdo_t *xdo, const xdo_search_t *search,
+                         Window **windowlist_ret, unsigned int *nwindows_ret
+);
+*/
+
+// g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
+
+XKeyEvent createKeyEvent(Display *display, Window &win,
+                           Window &winRoot, bool press,
+                           int keycode, int modifiers)
+{
+   XKeyEvent event;
+
+   event.display     = display;
+   event.window      = win;
+   event.root        = winRoot;
+   event.subwindow   = None;
+   event.time        = CurrentTime;
+   event.x           = 1;
+   event.y           = 1;
+   event.x_root      = 1;
+   event.y_root      = 1;
+   event.same_screen = True;
+   event.keycode     = XKeysymToKeycode(display, keycode);
+   event.state       = modifiers;
+
+   if(press)
+      event.type = KeyPress;
+   else
+      event.type = KeyRelease;
+
+   return event;
+}
 
 enum icon { nothing, left, right, up, down, button };
 
-icon find_icon(DATA32 *data, int width, int height)
+icon find_icon(DATA32 const *data, int width, int height)
 {
-  const DATA32 arrow_red    = -65536;
-  const DATA32 arrow_blue   = -16711704;
-  const DATA32 button_green = -16711936;
+  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
+  const DATA32 arrow_blue   = -16711704; // ff00ffe8
+  const DATA32 button_green = -16711936; // ff00ff00
+
   unsigned red_run   = 0, red_start;
   unsigned blue_run  = 0, blue_start;
   unsigned green_run = 0, green_start;
@@ -24,7 +74,7 @@ icon find_icon(DATA32 *data, int width, int height)
   
   for (int i = 0; i < height; i++) {
     for (int j = 1; j < width; j++) {
-      //data[i*width+j] = data[i*width+j] & (0xff << 24); // alpha
+
       DATA32 curr = data[i*width+j  ];
       DATA32 prev = data[i*width+j-1];
       if      (curr==arrow_red) {
@@ -39,13 +89,8 @@ icon find_icon(DATA32 *data, int width, int height)
         if (curr!=prev) { green_run = 1; green_start = j; }
         else            { green_run++;                    }
       }
-//      else {
-//red==4, then blue > 80 === right
-//blue > 80, then red==4 === left
-//red==1, blue==31 == up or down  21/30/16 4x 
-//          if (run > 10)  {
-//      }
     }
+
     if ((red_run==4)&&(blue_run>80)) // left or right
     {
       if      (red_start==blue_start-(red_run+1))
@@ -65,6 +110,7 @@ icon find_icon(DATA32 *data, int width, int height)
     if (green_run > 40)
       return button;
 
+#ifdef _DEBUG
     if (red_run > 0)  {
       printf("[%d,%2d,%d] (%5s) : ", i, red_run, red_start, "red");
 //          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
@@ -83,8 +129,8 @@ icon find_icon(DATA32 *data, int width, int height)
       green_run = 0;
       printf("\n");
     }
+#endif
   }
-  printf("\n");
 
   return nothing;
 }
@@ -100,9 +146,33 @@ int main(int argc, char *argv[])
   Screen     *scr     = NULL;
   int         rx, ry, rw, rh;
 
-  printf("%x\n", -65536);    // ffff0000
-  printf("%x\n", -16711704); // ff00ffe8
-  printf("%x\n", -16711936); // ff00ff00
+  xdo_t *xdo = xdo_new(NULL);
+
+  // This derived from int cmd_search(context_t *) in xdotool's cmd_search.c
+  {
+    Window *list;
+    unsigned nwindows;
+    xdo_search_t search;
+
+    memset(&search, 0, sizeof(xdo_search_t));
+    search.max_depth   = -1;  
+    search.require     = xdo_search_t::SEARCH_ANY;
+    search.searchmask |= SEARCH_NAME;
+    search.winname     = "ImageMagick";
+
+    xdo_search_windows(xdo, &search, &list, &nwindows);
+    if (nwindows == 1) {
+      target = list[0];
+    } else {
+      std::cerr << "error: no window matching: \"" << search.winname << "\"\n";
+      exit(1);
+    }
+    free(list);
+  }
+
+  xdo_send_keysequence_window(xdo, target, "q", 0);
+  xdo_free(xdo);
+  return 0;
 
   if (argc != 2)
   {
@@ -129,6 +199,16 @@ int main(int argc, char *argv[])
     XTranslateCoordinates(disp, target, root, 0, 0, &rx, &ry, &child);
   }
 
+/*  XKeyEvent event;
+  event = createKeyEvent(disp, target, root, true,  XK_Escape, 0);
+  int err = XSendEvent(event.display, event.window, True, KeyPressMask, (XEvent *)&event);
+  printf("%d %d %d\n", err, BadWindow, BadValue);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  event = createKeyEvent(disp, target, root, false, XK_Escape, 0);
+  XSendEvent(event.display, event.window, True, KeyPressMask, (XEvent *)&event);
+*/
+
+
 #if 0
 //  image = gib_imlib_create_image_from_drawable(root,0,rx,ry,rw,rh,1);
   imlib_context_set_drawable(root);
@@ -143,33 +223,40 @@ int main(int argc, char *argv[])
   imlib_image_set_format("png");
   imlib_save_image(filename_in);
 #endif
-  const int nimages = 1;
-  for (int i = 0; i < nimages; i++) {
-    imlib_context_set_drawable(root);
-    img_arr[i] = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
+  icon last_icon = nothing;
+//  for (int i = 0; i < nimages; i++) {
+  imlib_context_set_drawable(root);
+  do {
+    // img_arr[i] = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
+    // imlib_context_set_image(img_arr[i]);
+    Imlib_Image img = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
+    imlib_context_set_image(img);
     //im->data = malloc(width * height * sizeof(DATA32)); // ARGB32
     //See $HOME/apps/imlib2-1.4.4/src/lib/api.c
 //    DATA32 *data = img_arr[i]->data;
-    imlib_context_set_image(img_arr[i]);
     //DATA32 const *data = imlib_image_get_data_for_reading_only();
     DATA32 *data = imlib_image_get_data();
     //printf("w:%d h:%d\n", rw,rh);
     // 640x480
     icon x = find_icon(data,rw,rh); 
-    if (x==right)
-      printf("right\n");
-    else if (x==left)
-      printf("left\n");
-    else if (x==up)
-      printf("up\n");
-    else if (x==down)
-      printf("down\n");
-    else if (x==button)
-      printf("button\n");
+    if (last_icon == nothing) {
+      if      (x==right)
+        printf("right\n");
+      else if (x==left)
+        printf("left\n");
+      else if (x==up)
+        printf("up\n");
+      else if (x==down)
+        printf("down\n");
+      else if (x==button)
+        printf("button\n");
+    }
+    last_icon = x;
   
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
-  }
+  } while (1);
 
+#ifdef _DEBUG
   for (int i = 0; i < nimages; i++) {
     char filename_in[] = "images/blah?.png";
     filename_in[11]='a'+i; // n.b. element 11 is the question mark: ?
@@ -178,5 +265,6 @@ int main(int argc, char *argv[])
     imlib_image_set_format("png");
     imlib_save_image(filename_in);
   }
+#endif
   return 0;
 }
