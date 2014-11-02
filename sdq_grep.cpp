@@ -1,13 +1,15 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>     // memset
-//#include <unistd.h>
 #include <chrono>
 #include <thread>
-//#include <giblib/giblib.h>
 #include <Imlib2.h>
-//#include <X11/keysym.h> // For sending keypresses
-// usr/include/X11/keysymdef.h
+
+// XStringToKeysym and XKeysymToString can be useful in tracking down
+// the strings expected by libxdo's xdo_send_keysequence_window.
+// e.g. XK_Left is "Left" and XK_space is "space"
+// To use them #include <X11/keysym.h>; though the symbol definitions
+// are in /usr/include/X11/keysymdef.h
 
 extern "C" {
 #include <xdo.h> // sudo apt-get install libxdo-dev
@@ -59,6 +61,7 @@ XKeyEvent createKeyEvent(Display *display, Window &win,
    return event;
 }
 
+
 enum icon { nothing, left, right, up, down, button };
 
 icon find_icon(DATA32 const *data, int width, int height)
@@ -98,7 +101,7 @@ icon find_icon(DATA32 const *data, int width, int height)
       else if (blue_start==red_start-(blue_run+1))
         return left;
     }
-    if (red_run==31)
+    if (red_run>30)
       arrow_tail_up_or_down = true;
     if ((red_run==1)&&(blue_run==31))
     {
@@ -153,12 +156,16 @@ int main(int argc, char *argv[])
     Window *list;
     unsigned nwindows;
     xdo_search_t search;
+    const char daphne[] =
+      "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
 
     memset(&search, 0, sizeof(xdo_search_t));
     search.max_depth   = -1;  
     search.require     = xdo_search_t::SEARCH_ANY;
     search.searchmask |= SEARCH_NAME;
-    search.winname     = "ImageMagick";
+//    search.winname     = "ImageMagick";
+    search.winname     = daphne;
+//    search.winname     = "abcde";
 
     xdo_search_windows(xdo, &search, &list, &nwindows);
     if (nwindows == 1) {
@@ -170,10 +177,50 @@ int main(int argc, char *argv[])
     free(list);
   }
 
-  xdo_send_keysequence_window(xdo, target, "q", 0);
-  xdo_free(xdo);
-  return 0;
+  //xdo_send_keysequence_window(xdo, target, "q", 0);    xdo_free(xdo);
+//  xdo_send_keysequence_window(xdo, target, "6", 0);    xdo_free(xdo);
+//  xdo_send_keysequence_window(xdo, target, "Left", 0);
+//  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+/*  do {
+    char c;
+    const int delay = 0;
+    const int delay2 = 100;
+    scanf("%c", &c);
+    if (c!=10&&c!=91) {
+      if (c=='o') {
+//        xdo_send_keysequence_window(xdo, target, "Left", delay);
+        xdo_send_keysequence_window_down(xdo, target, "Left", delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay2));
+        xdo_send_keysequence_window_up(xdo, target, "Left", delay);
+        printf("send : Left\n");
+      }
+      else if (c=='p') {
+//        xdo_send_keysequence_window(xdo, target, "Right", delay);
+        xdo_send_keysequence_window_down(xdo, target, "Right", delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay2));
+        xdo_send_keysequence_window_up(xdo, target, "Right", delay);
+        printf("send : Right\n");
+      }
+      else if (c=='q') {
+//        xdo_send_keysequence_window(xdo, target, "6", delay);
+        xdo_send_keysequence_window_down(xdo, target, "6", delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay2));
+        xdo_send_keysequence_window_up(xdo, target, "6", delay);
+        printf("send : 6\n");
+      }
+      else if (c=='l') {
+//        xdo_send_keysequence_window(xdo, target, "Ctrl", delay);
+        xdo_send_keysequence_window_down(xdo, target, "space", delay);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay2));
+        xdo_send_keysequence_window_up(xdo, target, "space", delay);
+        printf("send : space\n");
+      }
+    }
 
+  } while (1);
+  return 0;
+*/
+/*
   if (argc != 2)
   {
     std::cout << "error: " << argv[0] << " needs an X window id argument.\n";
@@ -181,6 +228,7 @@ int main(int argc, char *argv[])
   }
   std::stringstream ss(argv[1]);
   ss >> target; // Otherwise obtained using scrot_get_window
+*/
    
   disp = XOpenDisplay(static_cast<char *>(NULL));
   scr  = ScreenOfDisplay(disp, DefaultScreen(disp));
@@ -226,6 +274,7 @@ int main(int argc, char *argv[])
   icon last_icon = nothing;
 //  for (int i = 0; i < nimages; i++) {
   imlib_context_set_drawable(root);
+//  int icount = 0;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
     // imlib_context_set_image(img_arr[i]);
@@ -240,16 +289,47 @@ int main(int argc, char *argv[])
     // 640x480
     icon x = find_icon(data,rw,rh); 
     if (last_icon == nothing) {
-      if      (x==right)
-        printf("right\n");
-      else if (x==left)
+      int key_delay = 100;
+      if       (x==left) {
+//        xdo_send_keysequence_window(xdo, target, "Left", 0);
+        xdo_send_keysequence_window_down(xdo, target, "Left", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
+        xdo_send_keysequence_window_up  (xdo, target, "Left", 0);
         printf("left\n");
-      else if (x==up)
+      } else if (x==right) {
+//        xdo_send_keysequence_window(xdo, target, "Right", 0);
+        xdo_send_keysequence_window_down(xdo, target, "Right", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
+        xdo_send_keysequence_window_up  (xdo, target, "Right", 0);
+        printf("right\n");
+      } else if (x==up) {
+//        xdo_send_keysequence_window(xdo, target, "Up", 0);
+        xdo_send_keysequence_window_down(xdo, target, "Up", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
+        xdo_send_keysequence_window_up  (xdo, target, "Up", 0);
         printf("up\n");
-      else if (x==down)
+/*
+    char filename_in[] = "images/blah?.png";
+    filename_in[11]='a'+icount; // n.b. element 11 is the question mark: ?
+    printf("%s\n", filename_in);
+    imlib_context_set_image(img);
+    imlib_image_set_format("png");
+    imlib_save_image(filename_in);
+    icount++;
+*/
+      } else if (x==down) {
+//        xdo_send_keysequence_window(xdo, target, "Down", 0);
+        xdo_send_keysequence_window_down(xdo, target, "Down", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
+        xdo_send_keysequence_window_up  (xdo, target, "Down", 0);
         printf("down\n");
-      else if (x==button)
+      } else if (x==button) {
+//        xdo_send_keysequence_window(xdo, target, "space", 0);
+        xdo_send_keysequence_window_down(xdo, target, "space", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
+        xdo_send_keysequence_window_up  (xdo, target, "space", 0);
         printf("button\n");
+      }
     }
     last_icon = x;
   
@@ -266,5 +346,7 @@ int main(int argc, char *argv[])
     imlib_save_image(filename_in);
   }
 #endif
+
+  xdo_free(xdo);
   return 0;
 }

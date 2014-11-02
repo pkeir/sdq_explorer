@@ -19,3 +19,5 @@ XID=$(xdotool search --name "ImageMagick")
 
 #xdotool windowkill $XID
 #xdotool windowunmap --sync $XID
+
+#xdotool search --name $DAPHNE key 6
