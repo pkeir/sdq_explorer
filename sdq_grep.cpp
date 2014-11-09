@@ -17,24 +17,121 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
 
+inline bool cmp(unsigned tol, unsigned x, unsigned y) {
+  return (x>=y) ? (x-y) <= tol : (y-x) <= tol;
+}
+
+template <typename ...Ts>
+inline bool cmp(unsigned tol, unsigned x, unsigned y,
+                unsigned x2,  unsigned y2, Ts ...ts) {
+  return cmp(tol,x,y) && cmp(tol,x2,y2,ts...);
+}
+
 template <std::size_t X, std::size_t Y>
 inline
 unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
                     const std::array<std::array<unsigned,Y>,X> &white_start)
 {
+  unsigned digits[X]{}, xorigin = 20;
+//[18,11] : [12, 6] : [18,11] :  // 0
+//[18,11] : [12, 6] : [18,11] : 
+//[18,11] : [12, 6] : [18,11] : 
+//[ 6,18] : [ 6,18] : [ 6,18] :  // 1
+//[ 6,18] : [ 6,18] : [ 6,18] : 
+//[18,11] : [ 8,21] : [28, 6] :  // 2 (125)
+//[18,11] : [ 8,21] : [28, 6] : 
+//[18,11] : [ 9,18] : [18,11] :  // 3
+//[18,11] : [ 9,18] : [18,11] : 
+//[16,12] : [ 9,18] : [18,11] :
+//[ 8,21] : [13,10] : [ 6,23] :  // 4 (153)
+//[ 8,21] : [15, 8] : [ 6,23] : 
+//[28, 6] : [15, 6] : [18,11] :  // 5 (127)
+//[28, 6] : [15, 6] : [18,11] :
+//[18,11] : [23, 6] : [18,11] :  // 6 (143)
+//[16,12] : [22, 6] : [18,11] :
+//[19,10] : [24, 6] : [18,11] : 
+//[18,11] : [24, 5] : [18,11] :
+//[28, 6] : [ 6,23] : [ 6,16] :  // 7 (119)
+//[28, 6] : [ 6,23] : [ 6,16] :
+//[18,11] : [18,11] : [18,11] :  // 8 (72)
+//[18,11] : [18,11] : [18,11] : 
+//[18,11] : [26, 8] : [19,10] :  // 9 (25)
+//[17,12] : [25, 8] : [18,11] : 
+
   for (unsigned digit = 0; digit < X; digit++) {
-    for (unsigned sline = 0; sline < Y; sline++) {
-      unsigned run   =   white_run[digit][sline];
-      unsigned start = white_start[digit][sline];
-      printf("[%2d,%d] : ", run, start);
-    }
+    unsigned r0  = white_run  [digit][0];
+    unsigned s0  = white_start[digit][0];
+    unsigned sn0 = s0 - xorigin;
+    unsigned r1  = white_run  [digit][1];
+    unsigned s1  = white_start[digit][1];
+    unsigned sn1 = s1 - xorigin;
+    unsigned r2  = white_run  [digit][2];
+    unsigned s2  = white_start[digit][2];
+    unsigned sn2 = s2 - xorigin;
+
+/*
+    printf("[%2d,%2d] : ", r0, sn0);
+    printf("[%2d,%2d] : ", r1, sn1);
+    printf("[%2d,%2d] : ", r2, sn2);
     printf("\n");
+*/
+
+    if        (cmp(2,r0,18,sn0,11,r1,12,sn1, 6,r2,18,sn2,11)) {
+      digits[digit] = 0;
+    } else if (cmp(2,r0, 6,sn0,18,r1, 6,sn1,18,r2, 6,sn2,18)) {
+      digits[digit] = 1;
+    } else if (cmp(2,r0,18,sn0,11,r1, 8,sn1,21,r2,28,sn2, 6)) {
+      digits[digit] = 2;
+    } else if (cmp(2,r0,17,sn0,11,r1, 9,sn1,18,r2,18,sn2,11)) {
+      digits[digit] = 3;
+    } else if (cmp(2,r0, 8,sn0,21,r1,14,sn1, 9,r2, 6,sn2,23)) {
+      digits[digit] = 4;
+    } else if (cmp(2,r0,28,sn0, 6,r1,15,sn1, 6,r2,18,sn2,11)) {
+      digits[digit] = 5;
+    } else if (cmp(2,r0,17,sn0,11,r1,22,sn1, 6,r2,18,sn2,11)) { // Yes 2
+      digits[digit] = 6;
+    } else if (cmp(2,r0,28,sn0, 6,r1, 6,sn1,23,r2, 6,sn2,16)) {
+      digits[digit] = 7;
+    } else if (cmp(2,r0,18,sn0,11,r1,18,sn1,11,r2,18,sn2,11)) {
+      digits[digit] = 8;
+    } else if (cmp(2,r0,17,sn0,11,r1,25,sn1, 8,r2,18,sn2,10)) {
+      digits[digit] = 9;
+    }
+
+    /*if (r0>15&&r0<18&&sn0>10&&sn0<13&&r1==6&&sn1==28&&
+        r2>15&&r2<18&&sn2>10&&sn2<13) {
+      digits[digit] = 0;
+    } else if (r0==6&&sn0==18&&r1==6&&sn1==18&&r2==6&&sn2==18) {
+      digits[digit] = 1;
+    } else if (r0==18&&sn0==11&&r1==9&&sn1==18&&r2==18&&sn2==11) {
+      digits[digit] = 3;
+    } else if (r0==8&&sn0==21&&r1==6&&sn1==23&&r2==6&&sn2==23) {
+      digits[digit] = 4;
+    } else if (r0==28&&sn0==6&&r1==8&&sn1==26&&r2==18&&sn2==11) {
+      digits[digit] = 5;
+    } else if (r0==28&&sn0==6&&r1==6&&sn1==23&&r2==6&&sn2==16) {
+      digits[digit] = 7;
+    } else if (r0==28&&sn0==6&&r1==6&&sn1==23&&r2==6&&sn2==16) {
+      digits[digit] = 7;
+    }*/
+
+    xorigin += 40;
   }
+//  for (auto d : digits) { printf("%d", d); }
+//  printf("\n");
+  unsigned score{};
+  score += 100000 * digits[0];
+  score += 10000  * digits[1];
+  score += 1000   * digits[2];
+  score += 100    * digits[3];
+  score += 10     * digits[4];
+  score += 1      * digits[5];
+  return score;
 }
 
 enum icon { nothing, left, right, up, down, button };
 
-icon find_icon(DATA32 const *data, int width, int height)
+icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
 {
   const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
   const DATA32 arrow_blue   = -16711704; // ff00ffe8
@@ -42,7 +139,7 @@ icon find_icon(DATA32 const *data, int width, int height)
   const DATA32 score_white  = 0xffffffea; // grabc can identify pixel colours
 
   static icon last = nothing;
-  unsigned score     = 0;
+//  unsigned score     = 0;
   unsigned red_run   = 0,   red_start;
   unsigned blue_run  = 0,  blue_start;
   unsigned green_run = 0, green_start;
@@ -71,17 +168,23 @@ icon find_icon(DATA32 const *data, int width, int height)
       }
       else if (curr==score_white) {
         int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
-        int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1;
+        int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1; // 0-2
         if (-1 != hsample) {
           unsigned &wr =   white_run[vslice][hsample];
           unsigned &ws = white_start[vslice][hsample];
-          if (curr!=prev) { wr = 1; ws = j; }
-          else            { wr++;           }
+//          if (vslice == 3 || vslice == 2) {
+//            printf("%d %3d : %2d %3d - %x (%x)\n", vslice, i, wr, ws, data[i*width+j+1], score_white);
+// isplay images/all_icons/img025.png 
+
+          if (0 == wr) { ws = j; }
+          wr++;
         }
+        //if (curr!=prev) { wr = 1; ws = j; }
+        //else            { wr++;           }
       }
     }
 
-    if (112==i)
+    if (112==i) // At this point the score has been scanned
       score = calc_score(white_run,white_start);
 
     if ((red_run==4)&&(blue_run>80)) // left or right
@@ -212,8 +315,8 @@ int main(int argc, char *argv[])
   Window      target  = 0;
   int         rx, ry, rw, rh;
   const char daphne[] =
-//    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
-    "ImageMagick";
+    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
+//    "ImageMagick";
 //    "DAPHNE: Now";
 
   xdo_t *xdo = xdo_new(NULL);
@@ -241,13 +344,16 @@ int main(int argc, char *argv[])
     imlib_context_set_drawable(root);
   }
 
+#ifdef MORE_DEBUG
   Imlib_Image img = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
   imlib_context_set_image(img);
   DATA32 *data = imlib_image_get_data();
-  icon x = find_icon(data,rw,rh); 
-/*
+  unsigned score;
+  icon x = find_icon(data,rw,rh,score); 
+
   // Draw vertical lines between the score digits
-  for (int x = 0; x < rh; x++) {
+
+/*  for (int x = 0; x < rh; x++) {
   for (int y = 0; y < rw; y++) {
     DATA32 &curr = data[x*rw+y  ];
     if (220 == y) { curr = 0; }
@@ -256,16 +362,21 @@ int main(int argc, char *argv[])
     if (100 == y) { curr = 0; }
     if ( 60 == y) { curr = 0; }
     if ( 20 == y) { curr = 0; }
+
+//  if (x == 86) { curr = 0; }
   }
   }
   imlib_image_set_format("png");
   imlib_save_image("scorelines.png");
 */
+
   xdo_free(xdo);
   return 0;
+#endif
 
 
   icon last_icon = nothing;
+  unsigned last_score = 0;
 //  for (int i = 0; i < nimages; i++) {
   int icount = 0;
   char cH = '0', cT = '0', cU = '0';
@@ -281,7 +392,9 @@ int main(int argc, char *argv[])
     DATA32 *data = imlib_image_get_data();
     //printf("w:%d h:%d\n", rw,rh);
     // 640x480
-    icon x = find_icon(data,rw,rh); 
+    unsigned score = 0;
+    icon x = find_icon(data,rw,rh,score); 
+    if (score != last_score) { printf("%d\n", score); }
     if (last_icon == nothing) {
 //      send_key(xdo, target, x);
       int key_delay = 100;
@@ -345,7 +458,8 @@ int main(int argc, char *argv[])
 #endif
 
     imlib_free_image();
-    last_icon = x;
+    last_score = score;
+    last_icon  = x;
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
   } while (1);
 
