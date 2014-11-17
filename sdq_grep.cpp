@@ -1,10 +1,10 @@
 #include <iostream>
-//#include <sstream>
 #include <cstring>     // memset
 #include <chrono>
 #include <thread>
 #include <Imlib2.h>
 
+// sudo apt-get install libpng-dev libfreetype6-dev libimlib2-dev
 // XStringToKeysym and XKeysymToString can be useful in tracking down
 // the strings expected by libxdo's xdo_send_keysequence_window.
 // e.g. XK_Left is "Left" and XK_space is "space"
@@ -14,6 +14,11 @@
 extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include <xdo.h> // sudo apt-get install libxdo-dev
 };
+
+#include "sdq_common.hpp"
+
+#define SCREENSHOT  
+//#define MORE_DEBUG
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
 
@@ -47,6 +52,7 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
 //[ 8,21] : [15, 8] : [ 6,23] : 
 //[28, 6] : [15, 6] : [18,11] :  // 5 (127)
 //[28, 6] : [15, 6] : [18,11] :
+//[28, 6] : [18, 5] : [19,10] :  // (After) icon 1 (before icon 2)
 //[18,11] : [23, 6] : [18,11] :  // 6 (143)
 //[16,12] : [22, 6] : [18,11] :
 //[19,10] : [24, 6] : [18,11] : 
@@ -69,51 +75,35 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
     unsigned s2  = white_start[digit][2];
     unsigned sn2 = s2 - xorigin;
 
-/*
+#ifdef  MORE_DEBUG
     printf("[%2d,%2d] : ", r0, sn0);
     printf("[%2d,%2d] : ", r1, sn1);
     printf("[%2d,%2d] : ", r2, sn2);
     printf("\n");
-*/
+#endif
 
-    if        (cmp(2,r0,18,sn0,11,r1,12,sn1, 6,r2,18,sn2,11)) {
+    const int tol = 3;
+    if        (cmp(tol,r0,18,sn0,11,r1,12,sn1, 6,r2,18,sn2,11)) {
       digits[digit] = 0;
-    } else if (cmp(2,r0, 6,sn0,18,r1, 6,sn1,18,r2, 6,sn2,18)) {
+    } else if (cmp(tol,r0, 6,sn0,18,r1, 6,sn1,18,r2, 6,sn2,18)) {
       digits[digit] = 1;
-    } else if (cmp(2,r0,18,sn0,11,r1, 8,sn1,21,r2,28,sn2, 6)) {
+    } else if (cmp(tol,r0,18,sn0,11,r1, 8,sn1,21,r2,28,sn2, 6)) {
       digits[digit] = 2;
-    } else if (cmp(2,r0,17,sn0,11,r1, 9,sn1,18,r2,18,sn2,11)) {
+    } else if (cmp(tol,r0,17,sn0,11,r1, 9,sn1,18,r2,18,sn2,11)) {
       digits[digit] = 3;
-    } else if (cmp(2,r0, 8,sn0,21,r1,14,sn1, 9,r2, 6,sn2,23)) {
+    } else if (cmp(tol,r0, 8,sn0,21,r1,14,sn1, 9,r2, 6,sn2,23)) {
       digits[digit] = 4;
-    } else if (cmp(2,r0,28,sn0, 6,r1,15,sn1, 6,r2,18,sn2,11)) {
+    } else if (cmp(tol,r0,28,sn0, 6,r1,15,sn1, 6,r2,18,sn2,11)) {
       digits[digit] = 5;
-    } else if (cmp(2,r0,17,sn0,11,r1,22,sn1, 6,r2,18,sn2,11)) { // Yes 2
+    } else if (cmp(tol,r0,17,sn0,11,r1,22,sn1, 6,r2,18,sn2,11)) {
       digits[digit] = 6;
-    } else if (cmp(2,r0,28,sn0, 6,r1, 6,sn1,23,r2, 6,sn2,16)) {
+    } else if (cmp(tol,r0,28,sn0, 6,r1, 6,sn1,23,r2, 6,sn2,16)) {
       digits[digit] = 7;
-    } else if (cmp(2,r0,18,sn0,11,r1,18,sn1,11,r2,18,sn2,11)) {
+    } else if (cmp(tol,r0,18,sn0,11,r1,18,sn1,11,r2,18,sn2,11)) {
       digits[digit] = 8;
-    } else if (cmp(2,r0,17,sn0,11,r1,25,sn1, 8,r2,18,sn2,10)) {
+    } else if (cmp(tol,r0,17,sn0,11,r1,25,sn1, 8,r2,18,sn2,10)) {
       digits[digit] = 9;
     }
-
-    /*if (r0>15&&r0<18&&sn0>10&&sn0<13&&r1==6&&sn1==28&&
-        r2>15&&r2<18&&sn2>10&&sn2<13) {
-      digits[digit] = 0;
-    } else if (r0==6&&sn0==18&&r1==6&&sn1==18&&r2==6&&sn2==18) {
-      digits[digit] = 1;
-    } else if (r0==18&&sn0==11&&r1==9&&sn1==18&&r2==18&&sn2==11) {
-      digits[digit] = 3;
-    } else if (r0==8&&sn0==21&&r1==6&&sn1==23&&r2==6&&sn2==23) {
-      digits[digit] = 4;
-    } else if (r0==28&&sn0==6&&r1==8&&sn1==26&&r2==18&&sn2==11) {
-      digits[digit] = 5;
-    } else if (r0==28&&sn0==6&&r1==6&&sn1==23&&r2==6&&sn2==16) {
-      digits[digit] = 7;
-    } else if (r0==28&&sn0==6&&r1==6&&sn1==23&&r2==6&&sn2==16) {
-      digits[digit] = 7;
-    }*/
 
     xorigin += 40;
   }
@@ -126,10 +116,11 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
   score += 100    * digits[3];
   score += 10     * digits[4];
   score += 1      * digits[5];
+#ifdef MORE_DEBUG
+  printf("score: %d\n", score);
+#endif // MORE_DEBUG
   return score;
 }
-
-enum icon { nothing, left, right, up, down, button };
 
 icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
 {
@@ -146,7 +137,7 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
   using ua63_t = std::array<std::array<unsigned,3>,6>; // std::array allows:
   ua63_t white_run{}, white_start{}, zero{};           //  white_run = zero;
   bool     arrow_tail_up_or_down = false;
-  
+ 
   for (int i = 0; i < height; i++) {
     int count = 0;
     for (int j = 1; j < width; j++) {
@@ -265,97 +256,37 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
   return nothing;
 }
 
-// This derived from int cmd_search(context_t *) in xdotool's cmd_search.c
-Window find_window(xdo_t *xdo, const char *str)
-{
-  Window *list, fnd_window = 0;
-  unsigned nwindows;
-  xdo_search_t search;
-
-  memset(&search, 0, sizeof(xdo_search_t));
-  search.max_depth   = -1;  
-  search.require     = xdo_search_t::SEARCH_ANY;
-  search.searchmask |= SEARCH_NAME;
-  search.winname     = str;
-
-  xdo_search_windows(xdo, &search, &list, &nwindows);
-  if (nwindows == 1) {
-    fnd_window = list[0];
-  } else {
-    std::cerr << "error: no one window matches: \"" << search.winname << "\"\n";
-    exit(1);
-  }
-
-  free(list);
-  return fnd_window;
-}
-
-void send_key(xdo_t *xdo, Window target, icon x)
-{
-  int key_delay = 100;
-  const char *sz_key;
-  switch (x) {
-    case left:   sz_key = "Left";
-    case right:  sz_key = "Right";
-    case up:     sz_key = "Up";
-    case down:   sz_key = "Down";
-    case button: sz_key = "space";
-    default: break;
-  }
-
-  xdo_send_keysequence_window_down(xdo, target, sz_key, 0);
-  std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-  xdo_send_keysequence_window_up  (xdo, target, sz_key, 0);
-}
-
 int main(int argc, char *argv[])
 {
   Imlib_Image image   = NULL; // ImlibImage (no underscore)
   Imlib_Image img_arr[16];
   Window      target  = 0;
-  int         rx, ry, rw, rh;
+  int         x, y, w, h;
   const char daphne[] =
+#ifdef  MORE_DEBUG
+    "ImageMagick";
+#else
     "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
-//    "ImageMagick";
+#endif
 //    "DAPHNE: Now";
 
   xdo_t *xdo = xdo_new(NULL);
   //target = find_window(xdo, "ImageMagick");
   target = find_window(xdo, daphne);
-
-  {
-    Window   child, root = 0;
-    Display *disp = NULL;
-    Visual  *vis  = NULL;
-    Screen  *scr  = NULL;
-
-    disp = XOpenDisplay(NULL);
-    scr  = ScreenOfDisplay(disp, DefaultScreen(disp));
-    vis  = DefaultVisual(disp, XScreenNumberOfScreen(scr));
-    root = RootWindow(disp, XScreenNumberOfScreen(scr));
-
-    XWindowAttributes attr;
-    XGetWindowAttributes(disp, target, &attr);
-    rw = attr.width; rh = attr.height;
-
-    XTranslateCoordinates(disp, target, root, 0, 0, &rx, &ry, &child);
-    imlib_context_set_display(disp);
-    imlib_context_set_visual(vis);
-    imlib_context_set_drawable(root);
-  }
+  get_coords(target,x,y,w,h);
 
 #ifdef MORE_DEBUG
-  Imlib_Image img = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
+  Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1);
   imlib_context_set_image(img);
   DATA32 *data = imlib_image_get_data();
   unsigned score;
-  icon x = find_icon(data,rw,rh,score); 
+  icon x = find_icon(data,w,h,score); 
 
   // Draw vertical lines between the score digits
 
 /*  for (int x = 0; x < rh; x++) {
-  for (int y = 0; y < rw; y++) {
-    DATA32 &curr = data[x*rw+y  ];
+  for (int y = 0; y < w; y++) {
+    DATA32 &curr = data[x*w+y  ];
     if (220 == y) { curr = 0; }
     if (180 == y) { curr = 0; }
     if (140 == y) { curr = 0; }
@@ -374,69 +305,39 @@ int main(int argc, char *argv[])
   return 0;
 #endif
 
-
   icon last_icon = nothing;
   unsigned last_score = 0;
 //  for (int i = 0; i < nimages; i++) {
-  int icount = 0;
-  char cH = '0', cT = '0', cU = '0';
+  unsigned icon_count = 0;
+//  char cH = '0', cT = '0', cU = '0';
   do {
-    // img_arr[i] = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
+    // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
-    Imlib_Image img = imlib_create_image_from_drawable(0,rx,ry,rw,rh,1);
+    Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1);
     imlib_context_set_image(img);
     //im->data = malloc(width * height * sizeof(DATA32)); // ARGB32
     //See $HOME/apps/imlib2-1.4.4/src/lib/api.c
 //    DATA32 *data = img_arr[i]->data;
     //DATA32 const *data = imlib_image_get_data_for_reading_only();
     DATA32 *data = imlib_image_get_data();
-    //printf("w:%d h:%d\n", rw,rh);
+    //printf("w:%d h:%d\n", w,h);
     // 640x480
-    unsigned score = 0;
-    icon x = find_icon(data,rw,rh,score); 
-    if (score != last_score) { printf("%d\n", score); }
-    if (last_icon == nothing) {
-//      send_key(xdo, target, x);
-      int key_delay = 100;
-      if       (x==left) {
-//        xdo_send_keysequence_window(xdo, target, "Left", 0);
-        xdo_send_keysequence_window_down(xdo, target, "Left", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-        xdo_send_keysequence_window_up  (xdo, target, "Left", 0);
-        printf("%3d left\n", icount++);
-      } else if (x==right) {
-//        xdo_send_keysequence_window(xdo, target, "Right", 0);
-        xdo_send_keysequence_window_down(xdo, target, "Right", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-        xdo_send_keysequence_window_up  (xdo, target, "Right", 0);
-        printf("%3d right\n", icount++);
-      } else if (x==up) {
-//        xdo_send_keysequence_window(xdo, target, "Up", 0);
-        xdo_send_keysequence_window_down(xdo, target, "Up", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-        xdo_send_keysequence_window_up  (xdo, target, "Up", 0);
-        printf("%3d up\n", icount++);
-
-      } else if (x==down) {
-//        xdo_send_keysequence_window(xdo, target, "Down", 0);
-        xdo_send_keysequence_window_down(xdo, target, "Down", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-        xdo_send_keysequence_window_up  (xdo, target, "Down", 0);
-        printf("%3d down\n", icount++);
-      } else if (x==button) {
-//        xdo_send_keysequence_window(xdo, target, "space", 0);
-        xdo_send_keysequence_window_down(xdo, target, "space", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-        xdo_send_keysequence_window_up  (xdo, target, "space", 0);
-        printf("%3d button\n", icount++);
-      }
+    unsigned score;
+    icon x = find_icon(data,w,h,score); 
+//    if (score != last_score) { printf("%d\n", score); }
+    if (last_icon == nothing && x!=nothing) {
+      send_key(xdo, target, x);
+      icon_count++;
     }
 
-// #define SCREENSHOT  
 #ifdef  SCREENSHOT
-    if (last_icon==nothing && x!=nothing) {
-      char filename_in[] = "images/all_icons/img___.png";
-      filename_in[20] = cH;
+//    if (last_icon==nothing && x!=nothing) {
+    if (score != last_score) {
+//      char filename_in[] = "images/all_icons/img___.png";
+      char filename_in[64];// = "images/all_icons/img???_00000.png";
+      sprintf(filename_in,
+        "%s_%03d_%05d.png", "images/all_icons/img", icon_count, score);
+/*      filename_in[20] = cH;
       filename_in[21] = cT;
       filename_in[22] = cU;
       if (cU=='9') {
@@ -448,12 +349,12 @@ int main(int argc, char *argv[])
         else { cT++; }
       }
       else { cU++; }
+*/
 //      filename_in[11]='a'+icount; // n.b. element 11 is the question mark: ?
       printf("%s\n", filename_in);
       imlib_context_set_image(img);
       imlib_image_set_format("png");
       imlib_save_image(filename_in);
-      //icount++;
     }
 #endif
 
