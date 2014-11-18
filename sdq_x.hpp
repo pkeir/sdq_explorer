@@ -1,5 +1,5 @@
-#ifndef SDQ_COMMON_HPP
-#define SDQ_COMMON_HPP
+#ifndef SDQ_X_HPP
+#define SDQ_X_HPP
 
 enum icon { nothing, left, right, up, down, button };
 
@@ -68,4 +68,4 @@ void get_coords(Window target, int &x, int &y, int &w, int &h)
   imlib_context_set_drawable(root);
 }
 
-#endif // SDQ_COMMON_HPP
+#endif // SDQ_X_HPP
