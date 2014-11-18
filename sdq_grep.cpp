@@ -17,6 +17,7 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 
 #include "sdq_x.hpp"
 #include "sdq_rgb.hpp"
+#include "score_digits.hpp"
 
 //#define SCREENSHOT  
 //#define MORE_DEBUG
