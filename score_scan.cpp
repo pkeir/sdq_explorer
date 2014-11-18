@@ -15,6 +15,10 @@ int main(int argc, char *argv[])
   char str[] = "images/?_score.png";
   unsigned digit = 0;
 
+  printf("#ifndef SCORE_DIGITS_HPP\n");
+  printf("#define SCORE_DIGITS_HPP\n\n");
+  printf("unsigned score_digits[][%d][2]={\n", num_hsamples);
+
   for (char c = '0'; c <= '9'; c++)
   {
     str[7] = c;
@@ -28,28 +32,24 @@ int main(int argc, char *argv[])
       const unsigned y = hsamples[i];
       for (unsigned j = 60; j < 100 ; j++) {     // digit 2: the 10,000s
         DATA32 curr = data[y*w+j];
-//        if (curr==score_white) { // much is only *nearly" white
         if (rgb_dist_lte(curr,score_white,2)) {
           if (white_run[digit][i]==0) { white_start[digit][i] = j-60; }
           white_run[digit][i]++;
         }
-/*        if (c=='9'&&1==i)
-          printf("%x ", curr);
-        if (c=='9'&&2==i&&60==j)
-          printf("\n");
-*/
       }
     }
 
     imlib_free_image();
 
-    printf("%d ", digit);
+    printf("  {");
     for (unsigned i = 0; i < num_hsamples; i++) {
-      printf("[%2d,%2d] : ", white_run[digit][i], white_start[digit][i]);
+      printf("{%2d,%2d},", white_run[digit][i], white_start[digit][i]);
     }
-    printf("\n");
+    printf("},\n");
     digit++;
   }
+  printf("};\n\n");
+  printf("#endif // SCORE_DIGITS_HPP\n");
 
   return 0;
 }
