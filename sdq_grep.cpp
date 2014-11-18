@@ -15,9 +15,10 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include <xdo.h> // sudo apt-get install libxdo-dev
 };
 
-#include "sdq_common.hpp"
+#include "sdq_x.hpp"
+#include "sdq_rgb.hpp"
 
-#define SCREENSHOT  
+//#define SCREENSHOT  
 //#define MORE_DEBUG
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
@@ -157,7 +158,8 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
         if (curr!=prev) { green_run = 1; green_start = j; }
         else            { green_run++;                    }
       }
-      else if (curr==score_white) {
+//      else if (curr==score_white) {
+      else if (rgb_dist_lte(curr,score_white,2)) {
         int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
         int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1; // 0-2
         if (-1 != hsample) {
@@ -280,7 +282,7 @@ int main(int argc, char *argv[])
   imlib_context_set_image(img);
   DATA32 *data = imlib_image_get_data();
   unsigned score;
-  icon x = find_icon(data,w,h,score); 
+  icon ic = find_icon(data,w,h,score); 
 
   // Draw vertical lines between the score digits
 
@@ -323,15 +325,17 @@ int main(int argc, char *argv[])
     //printf("w:%d h:%d\n", w,h);
     // 640x480
     unsigned score;
-    icon x = find_icon(data,w,h,score); 
-//    if (score != last_score) { printf("%d\n", score); }
-    if (last_icon == nothing && x!=nothing) {
-      send_key(xdo, target, x);
+    icon ic = find_icon(data,w,h,score); 
+#ifndef SCREENSHOT
+    if (score != last_score) { printf("%5d %d\n", score, score-last_score); }
+#endif
+    if (last_icon == nothing && ic!=nothing) {
+      send_key(xdo, target, ic);
       icon_count++;
     }
 
 #ifdef  SCREENSHOT
-//    if (last_icon==nothing && x!=nothing) {
+//    if (last_icon==nothing && ic!=nothing) {
     if (score != last_score) {
 //      char filename_in[] = "images/all_icons/img___.png";
       char filename_in[64];// = "images/all_icons/img???_00000.png";
@@ -360,7 +364,7 @@ int main(int argc, char *argv[])
 
     imlib_free_image();
     last_score = score;
-    last_icon  = x;
+    last_icon  = ic;
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
   } while (1);
 
