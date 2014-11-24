@@ -19,8 +19,8 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include "sdq_rgb.hpp"
 #include "score_digits.hpp"
 
-//#define SCREENSHOT  
-//#define MORE_DEBUG
+// #define SCREENSHOT  
+#define MORE_DEBUG
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
 
@@ -34,10 +34,25 @@ inline bool cmp(unsigned tol, unsigned x, unsigned y,
   return cmp(tol,x,y) && cmp(tol,x2,y2,ts...);
 }
 
+inline unsigned sdq_dist (unsigned x, unsigned y) { return x>y ? x-y : y-x; }
+inline float    sdq_distf(unsigned x, unsigned y) {
+  return x>y ? static_cast<float>(x-y) : static_cast<float>(y-x);
+}
+// normalised distance
+inline float    sdq_distn(unsigned x, unsigned y) {
+  return x>y ? static_cast<float>(x-y)/x : static_cast<float>(y-x)/y;
+}
+
+template <unsigned X, unsigned Y>
+unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
+{
+}
+
 template <std::size_t X, std::size_t Y>
 inline
 unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
-                    const std::array<std::array<unsigned,Y>,X> &white_start)
+                    const std::array<std::array<unsigned,Y>,X> &white_start,
+                    const unsigned (&white)[X][Y][2])
 {
   unsigned digits[X]{}, xorigin = 20;
 //[18,11] : [12, 6] : [18,11] :  // 0
@@ -67,7 +82,7 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
 //[17,12] : [25, 8] : [18,11] : 
 
   for (unsigned digit = 0; digit < X; digit++) {
-    unsigned r0  = white_run  [digit][0];
+/*    unsigned r0  = white_run  [digit][0];
     unsigned s0  = white_start[digit][0];
     unsigned sn0 = s0 - xorigin;
     unsigned r1  = white_run  [digit][1];
@@ -76,6 +91,42 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
     unsigned r2  = white_run  [digit][2];
     unsigned s2  = white_start[digit][2];
     unsigned sn2 = s2 - xorigin;
+*/
+    unsigned r0  = white[digit][0][0];
+    unsigned s0  = white[digit][0][1];
+    unsigned sn0 = s0 - xorigin;
+    unsigned r1  = white[digit][1][0];
+    unsigned s1  = white[digit][1][1];
+    unsigned sn1 = s1 - xorigin;
+    unsigned r2  = white[digit][2][0];
+    unsigned s2  = white[digit][2][1];
+    unsigned sn2 = s2 - xorigin;
+
+// unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
+    float match[10]{}, best_match{6};    // 0 is a perfect match
+    float match2[10]{}, best_match2{6};    // 0 is a perfect match
+    unsigned best{};
+
+    for (unsigned i = 0; i < 10; i++) {
+//      printf("%d-%d (%d %d) %f\n",
+//        digit, i, r0, score_digits[i][0][0],
+//        sdq_distn(r0,score_digits[i][0][0]));
+      match [i] += sdq_distn(r0, score_digits::digits[i][0][0]);
+      match [i] += sdq_distn(r1, score_digits::digits[i][1][0]);
+      match [i] += sdq_distn(r2, score_digits::digits[i][2][0]);
+      match2[i] += sdq_distn(sn0,score_digits::digits[i][0][1]);
+      match2[i] += sdq_distn(sn1,score_digits::digits[i][1][1]);
+      match2[i] += sdq_distn(sn2,score_digits::digits[i][2][1]);
+      match[i]+=match2[i];
+      printf("%f %f\n", match[i], match2[i]);
+      if (match[i]<best_match) {
+        best       = i;
+        best_match = match[i];
+      }
+    }
+
+    digits[digit] = best;
+    printf("[%d]", best);
 
 #ifdef  MORE_DEBUG
     printf("[%2d,%2d] : ", r0, sn0);
@@ -84,7 +135,7 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
     printf("\n");
 #endif
 
-    const int tol = 3;
+    /*const int tol = 3;
     if        (cmp(tol,r0,18,sn0,11,r1,12,sn1, 6,r2,18,sn2,11)) {
       digits[digit] = 0;
     } else if (cmp(tol,r0, 6,sn0,18,r1, 6,sn1,18,r2, 6,sn2,18)) {
@@ -105,7 +156,7 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
       digits[digit] = 8;
     } else if (cmp(tol,r0,17,sn0,11,r1,25,sn1, 8,r2,18,sn2,10)) {
       digits[digit] = 9;
-    }
+    }*/
 
     xorigin += 40;
   }
@@ -138,6 +189,7 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
   unsigned green_run = 0, green_start;
   using ua63_t = std::array<std::array<unsigned,3>,6>; // std::array allows:
   ua63_t white_run{}, white_start{}, zero{};           //  white_run = zero;
+  unsigned white[6][3][2]{};
   bool     arrow_tail_up_or_down = false;
  
   for (int i = 0; i < height; i++) {
@@ -164,8 +216,10 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
         int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
         int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1; // 0-2
         if (-1 != hsample) {
-          unsigned &wr =   white_run[vslice][hsample];
-          unsigned &ws = white_start[vslice][hsample];
+//          unsigned &wr =   white_run[vslice][hsample];
+//          unsigned &ws = white_start[vslice][hsample];
+          unsigned &wr = white[vslice][hsample][0];
+          unsigned &ws = white[vslice][hsample][1];
 //          if (vslice == 3 || vslice == 2) {
 //            printf("%d %3d : %2d %3d - %x (%x)\n", vslice, i, wr, ws, data[i*width+j+1], score_white);
 // isplay images/all_icons/img025.png 
@@ -179,7 +233,8 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
     }
 
     if (112==i) // At this point the score has been scanned
-      score = calc_score(white_run,white_start);
+      score = calc_score(white_run,white_start,white);
+//      score = calc_score(white_run,white_start);
 
     if ((red_run==4)&&(blue_run>80)) // left or right
     {
@@ -285,24 +340,25 @@ int main(int argc, char *argv[])
   unsigned score;
   icon ic = find_icon(data,w,h,score); 
 
-  // Draw vertical lines between the score digits
+  // Draw vertical/horizontal lines between the score digits
 
-/*  for (int x = 0; x < rh; x++) {
+  for (int x = 0; x < h; x++) {
   for (int y = 0; y < w; y++) {
     DATA32 &curr = data[x*w+y  ];
-    if (220 == y) { curr = 0; }
+/*    if (220 == y) { curr = 0; }
     if (180 == y) { curr = 0; }
     if (140 == y) { curr = 0; }
     if (100 == y) { curr = 0; }
     if ( 60 == y) { curr = 0; }
     if ( 20 == y) { curr = 0; }
-
-//  if (x == 86) { curr = 0; }
+*/
+    if ( 68==x) { curr=0; }
+    if ( 86==x) { curr=0; }
+    if (107==x) { curr=0; }
   }
   }
   imlib_image_set_format("png");
-  imlib_save_image("scorelines.png");
-*/
+  imlib_save_image("scorelines2.png");
 
   xdo_free(xdo);
   return 0;
@@ -338,24 +394,10 @@ int main(int argc, char *argv[])
 #ifdef  SCREENSHOT
 //    if (last_icon==nothing && ic!=nothing) {
     if (score != last_score) {
-//      char filename_in[] = "images/all_icons/img___.png";
       char filename_in[64];// = "images/all_icons/img???_00000.png";
       sprintf(filename_in,
         "%s_%03d_%05d.png", "images/all_icons/img", icon_count, score);
-/*      filename_in[20] = cH;
-      filename_in[21] = cT;
-      filename_in[22] = cU;
-      if (cU=='9') {
-        cU='0';
-        if (cT=='9') {
-          cT='0';
-          if (cH=='9') { cH='0'; } else { cH++; }
-        }
-        else { cT++; }
-      }
-      else { cU++; }
-*/
-//      filename_in[11]='a'+icount; // n.b. element 11 is the question mark: ?
+
       printf("%s\n", filename_in);
       imlib_context_set_image(img);
       imlib_image_set_format("png");

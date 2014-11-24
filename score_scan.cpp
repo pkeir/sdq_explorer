@@ -6,24 +6,45 @@
 
 int main(int argc, char *argv[])
 {
-  unsigned hsamples[] = {68,86,107};
+  unsigned hsamples[] = {68,86,107,};
   const DATA32 score_white  = 0xffffffea;
   const unsigned num_hsamples = sizeof(hsamples)/sizeof(hsamples[0]);
   const unsigned num_digits   = 10;
   unsigned white_run  [num_digits][num_hsamples]{};
   unsigned white_start[num_digits][num_hsamples]{};
+  Imlib_Image img[num_digits];
   char str[] = "images/?_score.png";
-  unsigned digit = 0;
+//  unsigned digit = 0;
 
   printf("#ifndef SCORE_DIGITS_HPP\n");
   printf("#define SCORE_DIGITS_HPP\n\n");
-  printf("unsigned score_digits[][%d][2]={\n", num_hsamples);
+  printf("struct score_digits {\n");
+  printf("  static const unsigned num_digits   = 10;\n");
+  printf("  static const unsigned num_hsamples = 3;\n");
+  printf("  static const unsigned hsamples[num_hsamples];\n");
+  printf("  static const unsigned digits[num_digits][num_hsamples][2];\n");
+  printf("};\n\n");
 
-  for (char c = '0'; c <= '9'; c++)
+//  printf("  static const unsigned hsamples[%d] = {", num_hsamples);
+  printf("const unsigned score_digits::hsamples[num_hsamples] = {");
+  for (const auto s : hsamples) { printf("%d,", s); }
+  printf("};\n");
+//  printf("  static const unsigned num_hsamples = ");
+//  printf("sizeof(hsamples)/sizeof(hsamples[0]);\n");
+ printf("const unsigned score_digits::digits[num_digits][num_hsamples][2]={\n");
+
+  for (unsigned digit = 0; digit < num_digits; digit++) {
+    str[7]     = '0'+digit;
+    img[digit] = imlib_load_image(str);
+  } 
+
+//  for (char c = '0'; c <= '9'; c++)
+  for (unsigned digit = 0; digit < num_digits; digit++)
   {
-    str[7] = c;
-    Imlib_Image img = imlib_load_image(str);
-    imlib_context_set_image(img);
+//    str[7] = c;
+//    Imlib_Image img = imlib_load_image(str);
+//    str[7] = '0'+digit;
+    imlib_context_set_image(img[digit]);
     DATA32 *data = imlib_image_get_data();
     int w        = imlib_image_get_width();
     int h        = imlib_image_get_height();
@@ -39,17 +60,23 @@ int main(int argc, char *argv[])
       }
     }
 
-    imlib_free_image();
-
+//    printf("    {");
     printf("  {");
     for (unsigned i = 0; i < num_hsamples; i++) {
+      if (0==white_run[digit][i]) {
+        fprintf(stderr,"error: division by zero would occur in sdq_grep");
+      }
       printf("{%2d,%2d},", white_run[digit][i], white_start[digit][i]);
     }
-    printf("},\n");
-    digit++;
+    printf("}, // %d\n", digit);
   }
+//  printf("  };\n}; // struct score_digits\n\n");
   printf("};\n\n");
   printf("#endif // SCORE_DIGITS_HPP\n");
 
+  for (unsigned digit = 0; digit < num_digits; digit++) {
+    imlib_context_set_image(img[digit]);
+    imlib_free_image();
+  } 
   return 0;
 }
