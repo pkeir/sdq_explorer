@@ -214,7 +214,15 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
 //      else if (curr==score_white) {
       else if (rgb_dist_lte(curr,score_white,2)) {
         int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
-        int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1; // 0-2
+        for (unsigned const hsample : score_digits::hsamples) {
+          if (i==hsample) {
+            unsigned &wr = white[vslice][hsample][0];
+            unsigned &ws = white[vslice][hsample][1];
+            if (0 == wr) { ws = j; }
+            wr++;
+          }
+        }
+        /*int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1; // 0-2
         if (-1 != hsample) {
 //          unsigned &wr =   white_run[vslice][hsample];
 //          unsigned &ws = white_start[vslice][hsample];
@@ -226,7 +234,7 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
 
           if (0 == wr) { ws = j; }
           wr++;
-        }
+        }*/
         //if (curr!=prev) { wr = 1; ws = j; }
         //else            { wr++;           }
       }
@@ -342,8 +350,8 @@ int main(int argc, char *argv[])
 
   // Draw vertical/horizontal lines between the score digits
 
-  for (int x = 0; x < h; x++) {
-  for (int y = 0; y < w; y++) {
+  for (unsigned x = 0; x < h; x++) {
+  for (unsigned y = 0; y < w; y++) {
     DATA32 &curr = data[x*w+y  ];
 /*    if (220 == y) { curr = 0; }
     if (180 == y) { curr = 0; }
@@ -352,9 +360,12 @@ int main(int argc, char *argv[])
     if ( 60 == y) { curr = 0; }
     if ( 20 == y) { curr = 0; }
 */
-    if ( 68==x) { curr=0; }
-    if ( 86==x) { curr=0; }
-    if (107==x) { curr=0; }
+//    if ( 68==x) { curr=0; }
+//    if ( 86==x) { curr=0; }
+//    if (107==x) { curr=0; }
+    for (unsigned const hsample : score_digits::hsamples) {
+      if (x==hsample) { curr=0; }
+    }
   }
   }
   imlib_image_set_format("png");
