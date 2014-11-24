@@ -6,7 +6,9 @@
 
 int main(int argc, char *argv[])
 {
-  unsigned hsamples[] = {68,86,107,};
+//  unsigned hsamples[] = {68,86,107,};
+  unsigned hsamples[] = {68,81,88,94,107,};
+//  unsigned hsamples[] = {68,81,94,107,}; // 0/8
   const DATA32 score_white  = 0xffffffea;
   const unsigned num_hsamples = sizeof(hsamples)/sizeof(hsamples[0]);
   const unsigned num_digits   = 10;
@@ -20,7 +22,7 @@ int main(int argc, char *argv[])
   printf("#define SCORE_DIGITS_HPP\n\n");
   printf("struct score_digits {\n");
   printf("  static const unsigned num_digits   = 10;\n");
-  printf("  static const unsigned num_hsamples = 3;\n");
+  printf("  static const unsigned num_hsamples = %d;\n", num_hsamples);
   printf("  static const unsigned hsamples[num_hsamples];\n");
   printf("  static const unsigned digits[num_digits][num_hsamples][2];\n");
   printf("};\n\n");
