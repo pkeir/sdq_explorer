@@ -19,7 +19,7 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include "sdq_rgb.hpp"
 #include "score_digits.hpp"
 
-// #define SCREENSHOT  
+//#define SCREENSHOT  
 //#define MORE_DEBUG
 //#define SAVE_SCANLINES // Can be used with MORE_DEBUG
 
@@ -41,7 +41,8 @@ inline float    sdq_distf(unsigned x, unsigned y) {
 }
 // normalised distance
 inline float    sdq_distn(unsigned x, unsigned y) {
-  return x>y ? static_cast<float>(x-y)/x : static_cast<float>(y-x)/y;
+  return x>y ?                   static_cast<float>(x-y)/x
+             : 0==(y-x) ? 0.0f : static_cast<float>(y-x)/y;
 }
 
 template <unsigned X, unsigned Y>
@@ -53,7 +54,7 @@ template <std::size_t X, std::size_t Y>
 inline
 unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
                     const std::array<std::array<unsigned,Y>,X> &white_start,
-                    const unsigned (&white)[X][Y][2])
+                    const unsigned (&scan)[X][Y][score_digits::num_fields])
 {
   unsigned digits[X]{}, xorigin = 20;
 //[18,11] : [12, 6] : [18,11] :  // 0
@@ -93,18 +94,18 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
     unsigned s2  = white_start[digit][2];
     unsigned sn2 = s2 - xorigin;
 */
-    unsigned r0  = white[digit][0][0];
-    unsigned s0  = white[digit][0][1];
+/*    unsigned r0  = scan[digit][0][0];
+    unsigned s0  = scan[digit][0][1];
     unsigned sn0 = s0 - xorigin;
-    unsigned r1  = white[digit][1][0];
-    unsigned s1  = white[digit][1][1];
+    unsigned r1  = scan[digit][1][0];
+    unsigned s1  = scan[digit][1][1];
     unsigned sn1 = s1 - xorigin;
-    unsigned r2  = white[digit][2][0];
-    unsigned s2  = white[digit][2][1];
+    unsigned r2  = scan[digit][2][0];
+    unsigned s2  = scan[digit][2][1];
     unsigned sn2 = s2 - xorigin;
-
+*/
 // unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
-    const float poor_match = 7.77f;
+    const float poor_match = 4.44f;
     float match[10]{}, best_match{poor_match};    // 0 is a perfect match
     float match2[10]{}, best_match2{poor_match};    // 0 is a perfect match
     unsigned best{};
@@ -114,13 +115,17 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
 //        digit, i, r0, score_digits[i][0][0],
 //        sdq_distn(r0,score_digits[i][0][0]));
       for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
-        unsigned r = white[digit][h][0];
-        unsigned s = white[digit][h][1] - xorigin;
-        match [i] += sdq_distn(r, score_digits::digits[i][h][0]);
-        match2[i] += sdq_distn(s, score_digits::digits[i][h][1]);
+        unsigned wr = scan[digit][h][0];
+        unsigned ws = scan[digit][h][1] - xorigin;
+        unsigned rr = scan[digit][h][2];
+        unsigned rs = scan[digit][h][3] - xorigin;
+        match [i] += sdq_distn(wr, score_digits::digits[i][h][0]);
+        match [i] += sdq_distn(rr, score_digits::digits[i][h][2]);
+//        match2[i] += sdq_distn(ws, score_digits::digits[i][h][1]);
+//        match2[i] += sdq_distn(rs, score_digits::digits[i][h][3]);
 #ifdef MORE_DEBUG
-//        printf("(%.3f)-", match[i]);
-        printf("[%.3f]-", match2[i]);
+        printf("(%.3f)|", match[i]);
+//        printf("[%.3f]|", match2[i]);
 #endif
       }
 
@@ -131,19 +136,19 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
       match2[i] += sdq_distn(sn1,score_digits::digits[i][1][1]);
       match2[i] += sdq_distn(sn2,score_digits::digits[i][2][1]);
 */
-#ifdef MORE_DEBUG
-      printf("%.3f %.3f %.3f\n", match[i], match2[i], best_match);
-#endif
-      match[i]+=match2[i];
+//      match[i]+=match2[i];
       if (match[i]<best_match) {
         best       = i;
         best_match = match[i];
       }
+#ifdef MORE_DEBUG
+      printf("%.3f %.3f %.3f\n", match[i], match2[i], best_match);
+#endif
     }
 
     digits[digit] = best;
 #ifdef MORE_DEBUG
-    printf("[%d][%f]\n", best, best_match);
+    printf("[%u][%f]\n", best, best_match);
 #endif
 
 #ifdef  MORE_DEBUG
@@ -151,9 +156,9 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
 //    printf("[%2d,%2d] : ", r1, sn1);
 //    printf("[%2d,%2d] : ", r2, sn2);
       for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
-        unsigned r = white[digit][h][0];
-        unsigned s = white[digit][h][1] - xorigin;
-        printf("[%2d,%2d] : ", r, s);
+        unsigned wr = scan[digit][h][0];
+        unsigned ws = scan[digit][h][1] - xorigin;
+        printf("[%2u,%2u] : ", wr, ws);
       }
     printf("\n");
 #endif
@@ -198,12 +203,13 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
   return score;
 }
 
-icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
+icon find_icon(DATA32 *data, int width, int height, unsigned &score)
 {
   const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
   const DATA32 arrow_blue   = -16711704; // ff00ffe8
   const DATA32 button_green = -16711936; // ff00ff00
   const DATA32 score_white  = 0xffffffea; // grabc can identify pixel colours
+  const DATA32 score_red    = 0xffff0000; // ""
 
   static icon last = nothing;
 //  unsigned score     = 0;
@@ -212,7 +218,7 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
   unsigned green_run = 0, green_start;
   using ua63_t = std::array<std::array<unsigned,score_digits::num_hsamples>,6>; // std::array allows:
   ua63_t white_run{}, white_start{}, zero{};           //  white_run = zero;
-  unsigned white[6][score_digits::num_hsamples][2]{};
+  unsigned white[6][score_digits::num_hsamples][score_digits::num_fields]{};
   bool     arrow_tail_up_or_down = false;
  
   for (int i = 0; i < height; i++) {
@@ -234,33 +240,36 @@ icon find_icon(DATA32 const *data, int width, int height, unsigned &score)
         if (curr!=prev) { green_run = 1; green_start = j; }
         else            { green_run++;                    }
       }
-//      else if (curr==score_white) {
-      else if (rgb_dist_lte(curr,score_white,2)) {
-        int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
-        //for (unsigned const hsample : score_digits::hsamples) {
-        for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
-          if (i==score_digits::hsamples[h]) {
-            unsigned &wr = white[vslice][h][0];
-            unsigned &ws = white[vslice][h][1];
-            if (0 == wr) { ws = j; }
-            wr++;
+      else if (rgb_dist_lte(curr,score_white,1)) {
+        if (j >= 20 && j < (20+6*40)) {
+          int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
+          // data[i*width+j] = 0;
+          //for (unsigned const hsample : score_digits::hsamples) {
+          for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
+            if (i==score_digits::hsamples[h]) {
+              unsigned &wr = white[vslice][h][0];
+              unsigned &ws = white[vslice][h][1];
+              if (0 == wr) { ws = j; }
+              wr++;
+            }
           }
-        }
-        /*int hsample = (68==i) ? 0 : (86==i) ? 1 : (107==i) ? 2 : -1; // 0-2
-        if (-1 != hsample) {
-//          unsigned &wr =   white_run[vslice][hsample];
-//          unsigned &ws = white_start[vslice][hsample];
-          unsigned &wr = white[vslice][hsample][0];
-          unsigned &ws = white[vslice][hsample][1];
-//          if (vslice == 3 || vslice == 2) {
-//            printf("%d %3d : %2d %3d - %x (%x)\n", vslice, i, wr, ws, data[i*width+j+1], score_white);
-// isplay images/all_icons/img025.png 
+        }   // if (j >= 20 || j < (20+5*40))
+      }
 
-          if (0 == wr) { ws = j; }
-          wr++;
-        }*/
-        //if (curr!=prev) { wr = 1; ws = j; }
-        //else            { wr++;           }
+      if (rgb_dist_lte(curr,score_red,1)) {
+        if (j >= 20 && j < (20+6*40)) {
+          int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
+          // data[i*width+j] = 0;
+          //for (unsigned const hsample : score_digits::hsamples) {
+          for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
+            if (i==score_digits::hsamples[h]) {
+              unsigned &rr = white[vslice][h][2];
+              unsigned &rs = white[vslice][h][3];
+              if (0 == rr) { rs = j; }
+              rr++;
+            }
+          }
+        }   // if (j >= 20 || j < (20+5*40))
       }
     }
 
