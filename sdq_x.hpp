@@ -1,7 +1,7 @@
 #ifndef SDQ_X_HPP
 #define SDQ_X_HPP
 
-enum icon { nothing, left, right, up, down, button };
+enum icon_t { nothing, left, right, up, down, button };
 
 // This derived from int cmd_search(context_t *) in xdotool's cmd_search.c
 Window find_window(xdo_t *xdo, const char *str)
@@ -28,7 +28,7 @@ Window find_window(xdo_t *xdo, const char *str)
   return fnd_window;
 }
 
-void send_key(xdo_t *xdo, Window target, icon x)
+void send_key(xdo_t *xdo, Window target, icon_t x)
 {
   int key_delay = 100;
   const char *sz_key;
