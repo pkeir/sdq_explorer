@@ -10,8 +10,10 @@ int main(int argc, char *argv[])
 //  unsigned hsamples[] = {68,81,94,107,}; // 0/8
 //  unsigned hsamples[] = {68,81,88,94,107,};
   unsigned hsamples[] = {66,81,88,94,111,};
-  const DATA32 score_white  = 0xffffffea;
-  const DATA32 score_red    = 0xffff0000;
+  const DATA32 score_white  = 0xffffffea; // Still use the old colours as we
+  const DATA32 score_red    = 0xffff0000; // for now still use the old data.
+//  const DATA32 score_white  = 0xfffcffd9; // new white
+//  const DATA32 score_red    = 0xfffd0100; // new red
   const unsigned num_hsamples = sizeof(hsamples)/sizeof(hsamples[0]);
   const unsigned num_digits   = 10;
   const unsigned num_fields   = 4;
@@ -20,7 +22,7 @@ int main(int argc, char *argv[])
   unsigned red_run    [num_digits][num_hsamples]{};
   unsigned red_start  [num_digits][num_hsamples]{};
   Imlib_Image img[num_digits];
-  char str[] = "images/?_score.png";
+  char str[] = "images/?_score.png"; // digit 2: the 10,000s is examined
 //  unsigned digit = 0;
 
   printf("#ifndef SCORE_DIGITS_HPP\n");

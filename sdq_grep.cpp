@@ -203,24 +203,29 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
   return score;
 }
 
-icon find_icon(DATA32 *data, int width, int height, unsigned &score)
+icon_t find_icon(DATA32 *data, int width, int height, unsigned &score)
 {
-  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
-  const DATA32 arrow_blue   = -16711704; // ff00ffe8
-  const DATA32 button_green = -16711936; // ff00ff00
-  const DATA32 score_white  = 0xffffffea; // grabc can identify pixel colours
-  const DATA32 score_red    = 0xffff0000; // ""
+//  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
+//  const DATA32 arrow_blue   = -16711704; // ff00ffe8
+//  const DATA32 button_green = -16711936; // ff00ff00
+//  const DATA32 score_white  = 0xffffffea; // grabc can identify pixel colours
+//  const DATA32 score_red    = 0xffff0000; // ""
+  const DATA32 arrow_red    = 0xfffd0100; // via grabc
+  const DATA32 arrow_blue   = 0xff00ffd8;
+  const DATA32 button_green = 0xff00fe00;
+  const DATA32 score_white  = 0xfffcffd9;
+  const DATA32 score_red    = 0xfffd0100; // same as arrow_red
 
-  static icon last = nothing;
+  static icon_t last = nothing;
 //  unsigned score     = 0;
   unsigned red_run   = 0,   red_start;
   unsigned blue_run  = 0,  blue_start;
   unsigned green_run = 0, green_start;
-  using ua63_t = std::array<std::array<unsigned,score_digits::num_hsamples>,6>; // std::array allows:
-  ua63_t white_run{}, white_start{}, zero{};           //  white_run = zero;
+  using ua63_t = std::array<std::array<unsigned,score_digits::num_hsamples>,6>; // std::array allows: white_run = zero; (now unneeded?)
+  ua63_t white_run{}, white_start{}, zero{};
   unsigned white[6][score_digits::num_hsamples][score_digits::num_fields]{};
   bool     arrow_tail_up_or_down = false;
- 
+
   for (int i = 0; i < height; i++) {
     int count = 0;
     for (int j = 1; j < width; j++) {
@@ -277,16 +282,23 @@ icon find_icon(DATA32 *data, int width, int height, unsigned &score)
       score = calc_score(white_run,white_start,white);
 //      score = calc_score(white_run,white_start);
 
-    if ((red_run==4)&&(blue_run>80)) // left or right
+//    if ((red_run > 2)&&(blue_run>20))
+//      printf("r %d %d\n", red_run, blue_run);
+//    if ((red_run > 3)&&(blue_run>80))
+//      printf("r %d %d\n", red_run, blue_run);
+    // Was red_run==4 but now red_run==5; red_run>3 handles both
+    if ((red_run>3)&&(blue_run>80)) // left or right
     {
-      if      (red_start==blue_start-(red_run+1))
+//      if      (red_start==blue_start-(red_run+1))
+      if      (red_start==blue_start-red_run)
 {
 //        if (last != right)
 //          printf("%3d %3d ", red_start, i);
 //        last = right;
         return right;
 }
-      else if (blue_start==red_start-(blue_run+1))
+//      else if (blue_start==red_start-(blue_run+1))
+      else if (blue_start==red_start-blue_run)
 {
 //        if (last != left)
 //          printf("%3d %3d ", blue_start, i);
@@ -296,7 +308,8 @@ icon find_icon(DATA32 *data, int width, int height, unsigned &score)
     }
     if (red_run>30)
       arrow_tail_up_or_down = true;
-    if ((red_run==1)&&(blue_run==31))
+//    if ((red_run==1)&&(blue_run==31))
+    if ((red_run==3)&&(blue_run==32))
     {
       if (arrow_tail_up_or_down)
 {
@@ -368,18 +381,19 @@ int main(int argc, char *argv[])
     "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
 #endif
 //    "DAPHNE: Now";
+  setbuf(stdout,NULL);    // Flush ok; else use fprintf(stderr,"hello");
 
   xdo_t *xdo = xdo_new(NULL);
   //target = find_window(xdo, "ImageMagick");
   target = find_window(xdo, daphne);
-  get_coords(target,x,y,w,h);
+  get_coords(target,x,y,w,h);          // x, y, w and h are returned
 
 #ifdef MORE_DEBUG 
   Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1);
   imlib_context_set_image(img);
   DATA32 *data = imlib_image_get_data();
   unsigned score;
-  icon ic = find_icon(data,w,h,score); 
+  icon_t icon = find_icon(data,w,h,score); 
 
   // Draw vertical/horizontal lines between the score digits
 
@@ -408,10 +422,10 @@ int main(int argc, char *argv[])
 
   xdo_free(xdo);
   return 0;
-#endif
+#endif // MORE_DEBUG
 
-  icon last_icon = nothing;
-  unsigned last_score = 0;
+  icon_t prev_icon = nothing;
+  unsigned prev_score = 0;
 //  for (int i = 0; i < nimages; i++) {
   unsigned icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
@@ -426,20 +440,21 @@ int main(int argc, char *argv[])
     //DATA32 const *data = imlib_image_get_data_for_reading_only();
     DATA32 *data = imlib_image_get_data();
     //printf("w:%d h:%d\n", w,h);
+    //printf("%p\n", data);
     // 640x480
     unsigned score;
-    icon ic = find_icon(data,w,h,score); 
+    icon_t icon = find_icon(data,w,h,score); 
 #ifndef SCREENSHOT
-    if (score != last_score) { printf("%5d %d\n", score, score-last_score); }
+    if (score != prev_score) { printf("%5d %d\n", score, score-prev_score); }
 #endif
-    if (last_icon == nothing && ic!=nothing) {
-      send_key(xdo, target, ic);
+    if (prev_icon == nothing && icon != nothing) {
+      send_key(xdo, target, icon);
       icon_count++;
     }
 
 #ifdef  SCREENSHOT
-//    if (last_icon==nothing && ic!=nothing) {
-    if (score != last_score) {
+//    if (prev_icon==nothing && icon != nothing) {
+    if (score != prev_score) {
       char filename_in[64];// = "images/all_icons/img???_00000.png";
       sprintf(filename_in,
         "%s_%03d_%05d.png", "images/all_icons/img", icon_count, score);
@@ -452,8 +467,8 @@ int main(int argc, char *argv[])
 #endif
 
     imlib_free_image();
-    last_score = score;
-    last_icon  = ic;
+    prev_score = score;
+    prev_icon  = icon;
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
   } while (1);
 
