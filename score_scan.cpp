@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <Imlib2.h>
 #include "sdq_rgb.hpp"
 
@@ -10,10 +11,10 @@ int main(int argc, char *argv[])
 //  unsigned hsamples[] = {68,81,94,107,}; // 0/8
 //  unsigned hsamples[] = {68,81,88,94,107,};
   unsigned hsamples[] = {66,81,88,94,111,};
-  const DATA32 score_white  = 0xffffffea; // Still use the old colours as we
-  const DATA32 score_red    = 0xffff0000; // for now still use the old data.
-//  const DATA32 score_white  = 0xfffcffd9; // new white
-//  const DATA32 score_red    = 0xfffd0100; // new red
+//  const DATA32 score_white  = 0xffffffea; // old white
+//  const DATA32 score_red    = 0xffff0000; // old red
+  const DATA32 score_white  = 0xfffcffd9; // new white
+  const DATA32 score_red    = 0xfffd0100; // new red
   const unsigned num_hsamples = sizeof(hsamples)/sizeof(hsamples[0]);
   const unsigned num_digits   = 10;
   const unsigned num_fields   = 4;
@@ -22,7 +23,7 @@ int main(int argc, char *argv[])
   unsigned red_run    [num_digits][num_hsamples]{};
   unsigned red_start  [num_digits][num_hsamples]{};
   Imlib_Image img[num_digits];
-  char str[] = "images/?_score.png"; // digit 2: the 10,000s is examined
+  char str[] = "images/scores/?_score.png"; // digit 2: the 10,000s is examined
 //  unsigned digit = 0;
 
   printf("#ifndef SCORE_DIGITS_HPP\n");
@@ -43,8 +44,10 @@ int main(int argc, char *argv[])
 //  printf("sizeof(hsamples)/sizeof(hsamples[0]);\n");
  printf("const unsigned score_digits::digits[num_digits][num_hsamples][num_fields]={\n");
 
+  char *pdigit = strchr(str,'?');
   for (unsigned digit = 0; digit < num_digits; digit++) {
-    str[7]     = '0'+digit;
+//    str[7]     = '0'+digit;
+    *pdigit    = '0'+digit;
     img[digit] = imlib_load_image(str);
   } 
 

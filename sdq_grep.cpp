@@ -455,9 +455,9 @@ int main(int argc, char *argv[])
 #ifdef  SCREENSHOT
 //    if (prev_icon==nothing && icon != nothing) {
     if (score != prev_score) {
-      char filename_in[64];// = "images/all_icons/img???_00000.png";
+      char filename_in[64];// = "images/playthrough/img???_00000.png";
       sprintf(filename_in,
-        "%s_%03d_%05d.png", "images/all_icons/img", icon_count, score);
+        "%s_%03d_%06d.png", "images/playthrough/img", icon_count, score);
 
       printf("%s\n", filename_in);
       imlib_context_set_image(img);
