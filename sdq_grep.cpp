@@ -16,6 +16,7 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 };
 
 #include "sdq_x.hpp"
+#include "sdq_game_params.hpp"
 #include "sdq_rgb.hpp"
 #include "score_digits.hpp"
 
@@ -440,7 +441,7 @@ int main(int argc, char *argv[])
   icon_t prev_icon = nothing;
   unsigned prev_score = 0;
 //  for (int i = 0; i < nimages; i++) {
-  unsigned icon_count = 0;
+  unsigned icon_count = 0, level_icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
   icon_t live_icon = nothing;
   do {
@@ -466,12 +467,15 @@ int main(int argc, char *argv[])
         printf("    %8s %5d %5d\n",             ib, score-prev_score, score);
       else
         printf("%3d %8s %5d %5d\n", icon_count, ib, score-prev_score, score);
-      live_icon = nothing;
+      live_icon = nothing;        //                                **
     }
 #endif
     if (prev_icon == nothing && icon != nothing) {
       send_key(xdo, target, icon);
-      icon_count++;
+      icon_count++; level_icon_count++;
+      if (live_icon != nothing) { // Would have been reset above at **
+        printf("There's been a murder!\n");
+      }
       live_icon = icon;
     }
 

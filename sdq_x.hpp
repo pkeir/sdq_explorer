@@ -1,7 +1,7 @@
 #ifndef SDQ_X_HPP
 #define SDQ_X_HPP
 
-enum icon_t { nothing, left, right, up, down, button };
+#include "sdq_game_params.hpp"
 
 // This derived from int cmd_search(context_t *) in xdotool's cmd_search.c
 Window find_window(xdo_t *xdo, const char *str)
