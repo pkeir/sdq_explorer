@@ -203,6 +203,19 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
   return score;
 }
 
+inline const char *icon_t_to_string(const icon_t x) {
+  if (x==nothing) printf("huh! nothing!\n");
+  switch (x) {
+    case nothing: return "nothing";
+    case left:    return "left";
+    case right:   return "right";
+    case up:      return "up";
+    case down:    return "down";
+    case button:  return "button";
+  };
+  return "";
+}
+
 icon_t find_icon(DATA32 *data, int width, int height, unsigned &score)
 {
 //  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
@@ -429,6 +442,7 @@ int main(int argc, char *argv[])
 //  for (int i = 0; i < nimages; i++) {
   unsigned icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
+  icon_t live_icon = nothing;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -445,11 +459,20 @@ int main(int argc, char *argv[])
     unsigned score;
     icon_t icon = find_icon(data,w,h,score); 
 #ifndef SCREENSHOT
-    if (score != prev_score) { printf("%5d %d\n", score, score-prev_score); }
+    if (score != prev_score) {
+      const char *ib = (live_icon != nothing) ? icon_t_to_string(live_icon)
+                                              : "(bonus)";
+      if (live_icon == nothing)
+        printf("    %8s %5d %5d\n",             ib, score-prev_score, score);
+      else
+        printf("%3d %8s %5d %5d\n", icon_count, ib, score-prev_score, score);
+      live_icon = nothing;
+    }
 #endif
     if (prev_icon == nothing && icon != nothing) {
       send_key(xdo, target, icon);
       icon_count++;
+      live_icon = icon;
     }
 
 #ifdef  SCREENSHOT
