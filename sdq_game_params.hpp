@@ -2,6 +2,10 @@
 #define SDQ_GAME_PARAMS_HPP
 
 enum icon_t { nothing, left, right, up, down, button };
+enum lvl_t  { bats, totem, fire_woman, pyramid_steps, water_lift, serpents,
+              mummy, gulley, skeletons, hands, snake, dragon, jellyfish,
+              river_jump, river_logs, river_raft, windmill, chariots,
+              stair_chute, closing_walls, winged_goblins, laser_eyes, witch };
 
 const icon_t lvl_bats          [] = {right,right,right,left,button,button,
                                      button};
@@ -33,8 +37,14 @@ const icon_t lvl_chariots      [] = {up,up,up,up,up,up};
 const icon_t lvl_stair_chute   [] = {left};
 const icon_t lvl_closing_walls [] = {left};
 const icon_t lvl_winged_goblins[] = {button,button};
-const icon_t lvl_laser_eyes[]     = {left,right,up,left};
-const icon_t lvl_witch[]          = {right,button,left,up,right,left,button,
+const icon_t lvl_laser_eyes    [] = {left,right,up,left};
+const icon_t lvl_witch         [] = {right,button,left,up,right,left,button,
                                      button,right,left,button};
+
+const lvl_t seqA[] = { bats, gulley, pyramid_steps, water_lift, serpents,
+                       mummy, totem, fire_woman, skeletons, hands };
+
+static_assert(sizeof(icon_t)==4,"");
+static_assert(sizeof(lvl_bats)==7*sizeof(icon_t),"");
 
 #endif // SDQ_GAME_PARAMS_HPP
