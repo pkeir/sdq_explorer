@@ -51,6 +51,10 @@ unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
 {
 }
 
+//
+void lvl_update(lvl_t &lvl, unsigned &lvl_icon_count, icon_t icon) {
+}
+
 template <std::size_t X, std::size_t Y>
 inline
 unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
@@ -204,9 +208,8 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
   return score;
 }
 
-inline const char *icon_t_to_string(const icon_t x) {
-  if (x==nothing) printf("huh! nothing!\n");
-  switch (x) {
+inline const char *icon_to_string(const icon_t icon) {
+  switch (icon) {
     case nothing: return "nothing";
     case left:    return "left";
     case right:   return "right";
@@ -214,7 +217,36 @@ inline const char *icon_t_to_string(const icon_t x) {
     case down:    return "down";
     case button:  return "button";
   };
-  return "";
+  return "error in icon_to_string";
+}
+
+inline const char *lvl_to_string(const lvl_t lvl) {
+  switch (lvl) {
+    case bats           : return "bats";
+    case totem          : return "totem";
+    case fire_woman     : return "fire_woman";
+    case pyramid_steps  : return "pyramid_steps";
+    case water_lift     : return "water_lift";
+    case serpents       : return "serpents";
+    case mummy          : return "mummy";
+    case gulley         : return "gulley";
+    case skeletons      : return "skeletons";
+    case hands          : return "hands";
+    case snake          : return "snake";
+    case dragon         : return "dragon";
+    case jellyfish      : return "jellyfish";
+    case river_jump     : return "river_jump";
+    case river_logs     : return "river_logs";
+    case river_raft     : return "river_raft";
+    case windmill       : return "windmill";
+    case chariots       : return "chariots";
+    case stair_chute    : return "stair_chute";
+    case closing_walls  : return "closing_walls";
+    case winged_goblins : return "winged_goblins";
+    case laser_eyes     : return "laser_eyes";
+    case witch          : return "witch";
+  };
+  return "error in lvl_to_string";
 }
 
 icon_t find_icon(DATA32 *data, int width, int height, unsigned &score)
@@ -438,12 +470,20 @@ int main(int argc, char *argv[])
   return 0;
 #endif // MORE_DEBUG
 
+/*
+  // To start a game press "1"
+  xdo_send_keysequence_window_down(xdo, target, "1", 0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  xdo_send_keysequence_window_up  (xdo, target, "1", 0);
+*/
+
   icon_t prev_icon = nothing;
   unsigned prev_score = 0;
 //  for (int i = 0; i < nimages; i++) {
-  unsigned icon_count = 0, level_icon_count = 0;
+  unsigned icon_count = 0, lvl_icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
   icon_t live_icon = nothing;
+  lvl_t  lvl       = bats;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -461,7 +501,7 @@ int main(int argc, char *argv[])
     icon_t icon = find_icon(data,w,h,score); 
 #ifndef SCREENSHOT
     if (score != prev_score) {
-      const char *ib = (live_icon != nothing) ? icon_t_to_string(live_icon)
+      const char *ib = (live_icon != nothing) ? icon_to_string(live_icon)
                                               : "(bonus)";
       if (live_icon == nothing)
         printf("    %8s %5d %5d\n",             ib, score-prev_score, score);
@@ -472,9 +512,11 @@ int main(int argc, char *argv[])
 #endif
     if (prev_icon == nothing && icon != nothing) {
       send_key(xdo, target, icon);
-      icon_count++; level_icon_count++;
+          icon_count++;
+      lvl_icon_count++;
       if (live_icon != nothing) { // Would have been reset above at **
         printf("There's been a murder!\n");
+        lvl_update(lvl,lvl_icon_count,icon);
       }
       live_icon = icon;
     }
@@ -498,6 +540,7 @@ int main(int argc, char *argv[])
     prev_icon  = icon;
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
   } while (1);
+//  } while (icon_count < 150);
 
   xdo_free(xdo);
   return 0;
