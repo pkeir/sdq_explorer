@@ -1,7 +1,10 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <cstring>     // memset
 #include <chrono>
 #include <thread>
+#include <climits>
 #include <Imlib2.h>
 
 // sudo apt-get install libpng-dev libfreetype6-dev libimlib2-dev
@@ -287,8 +290,8 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
   bool     arrow_tail_up_or_down = false;
   sample.n = data[(  height/4)*width+(width/2)];
   sample.s = data[(3*height/4)*width+(width/2)];
-  sample.e = data[(  height/2)*width-(width/4)];
-  sample.w = data[(  height/2)*width+(width/4)];
+  sample.e = data[(  height/2)*width+(width/4)];
+  sample.w = data[(  height/2)*width-(width/4)];
 
   for (int i = 0; i < height; i++) {
     int count = 0;
@@ -432,6 +435,64 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
   return nothing;
 }
 
+struct icon_data_t {
+  unsigned reward;
+  icon_t   icon;
+  sample_t sample;
+};
+
+template <std::size_t N>
+void load_sdq_play_data(std::array<icon_data_t,N> &play_data)
+{
+  std::ifstream file("game_data.txt");
+  if (!file) printf("error: game_data.txt not found.\n");
+
+  unsigned i = 0;
+  std::string line;
+  while (std::getline(file, line))
+  {
+    if (line.compare(6,5,"bonus")==0) { continue; } // skip this line
+
+    std::istringstream iss(line);
+    unsigned    _, reward;
+    std::string str;
+    sample_t    s;
+    if (iss >> _ >> str >> reward >> _ >> std::hex >> s.n >> s.s >> s.e >> s.w)
+    {
+      play_data[i].reward = reward;
+      play_data[i].sample = s;
+      switch (str[0]) {
+        case 'u' : play_data[i].icon = up;     break;
+        case 'd' : play_data[i].icon = down;   break;
+        case 'l' : play_data[i].icon = left;   break;
+        case 'r' : play_data[i].icon = right;  break;
+        case 'b' : play_data[i].icon = button; break;
+      };
+      i++;
+    }
+  }
+}
+
+template <std::size_t N>
+unsigned find_closest(const sample_t sample,
+                      const std::array<icon_data_t,N> &play_data) {
+  unsigned result = 0;
+  DATA32 min = UINT_MAX;
+  DATA32 n1  = sample.n; DATA32 s1 = sample.s;
+  DATA32 e1  = sample.e; DATA32 w1 = sample.w;
+  for (unsigned i = 0; i < N; i++) {
+    DATA32 n2 = play_data[i].sample.n; DATA32 s2 = play_data[i].sample.s;
+    DATA32 e2 = play_data[i].sample.e; DATA32 w2 = play_data[i].sample.w;
+    DATA32 sos = rgb_dist_sqr(n1, n2) + rgb_dist_sqr(s1, s2)
+               + rgb_dist_sqr(e1, e2) + rgb_dist_sqr(w1, w2);
+    if (sos < min) {
+      min    = sos;
+      result = i;
+    }
+  }
+  return result;
+}
+
 int main(int argc, char *argv[])
 {
   Imlib_Image image   = NULL; // ImlibImage (no underscore)
@@ -489,10 +550,15 @@ int main(int argc, char *argv[])
   return 0;
 #endif // MORE_DEBUG
 
+  std::array<icon_data_t,156> play_data;
+  load_sdq_play_data(play_data);
+
+/*
   // To start a game press "1"
   xdo_send_keysequence_window_down(xdo, target, "1", 0);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   xdo_send_keysequence_window_up  (xdo, target, "1", 0);
+*/
 
   icon_t prev_icon = nothing;
   unsigned prev_score = 0;
@@ -501,6 +567,7 @@ int main(int argc, char *argv[])
 //  char cH = '0', cT = '0', cU = '0';
   icon_t live_icon = nothing;
   lvl_t  lvl       = bats;
+  unsigned closest;
   sample_t sample;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
@@ -524,13 +591,15 @@ int main(int argc, char *argv[])
       if (live_icon == nothing)
         printf("    %8s %5d %5d\n",             ib, score-prev_score, score);
       else {
-        printf("%3d %8s %5d %5d ", icon_count, ib, score-prev_score, score);
-        printf("%x %x %x %x\n", sample.n, sample.s, sample.e, sample.w);
+        printf("%3d %8s %5d %5d\n", icon_count, ib, score-prev_score, score);
+//        printf("%d\n", closest);
       }
       live_icon = nothing;        // n.b.
     }
 #endif
     if (prev_icon == nothing && icon != nothing) {
+      closest = find_closest(sample,play_data);
+      printf("%x %x %x %x %d", sample.n, sample.s, sample.e, sample.w, closest);
       send_key(xdo, target, icon);
       lvl_update(icon,live_icon,icon_count,lvl_icon_count,lvl);
     }
