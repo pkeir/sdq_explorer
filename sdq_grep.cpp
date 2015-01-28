@@ -26,6 +26,10 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
 
+struct sample_t {
+  DATA32 n,s,e,w;
+};
+
 inline bool cmp(unsigned tol, unsigned x, unsigned y) {
   return (x>=y) ? (x-y) <= tol : (y-x) <= tol;
 }
@@ -51,8 +55,17 @@ unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
 {
 }
 
-//
-void lvl_update(lvl_t &lvl, unsigned &lvl_icon_count, icon_t icon) {
+inline void lvl_update(icon_t icon, icon_t &live_icon,
+                       unsigned &icon_count, unsigned &lvl_icon_count,
+                       lvl_t &lvl) {
+
+  icon_count++;
+  lvl_icon_count++;
+  // live_icon is reset the last time the score was increased
+  if (live_icon != nothing) {
+    printf("There's been a murder!");
+  }
+  live_icon = icon;
 }
 
 template <std::size_t X, std::size_t Y>
@@ -249,7 +262,8 @@ inline const char *lvl_to_string(const lvl_t lvl) {
   return "error in lvl_to_string";
 }
 
-icon_t find_icon(DATA32 *data, int width, int height, unsigned &score)
+icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
+                 sample_t &sample)
 {
 //  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
 //  const DATA32 arrow_blue   = -16711704; // ff00ffe8
@@ -271,6 +285,10 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score)
   ua63_t white_run{}, white_start{}, zero{};
   unsigned white[6][score_digits::num_hsamples][score_digits::num_fields]{};
   bool     arrow_tail_up_or_down = false;
+  sample.n = data[(  height/4)*width+(width/2)];
+  sample.s = data[(3*height/4)*width+(width/2)];
+  sample.e = data[(  height/2)*width-(width/4)];
+  sample.w = data[(  height/2)*width+(width/4)];
 
   for (int i = 0; i < height; i++) {
     int count = 0;
@@ -439,7 +457,8 @@ int main(int argc, char *argv[])
   imlib_context_set_image(img);
   DATA32 *data = imlib_image_get_data();
   unsigned score;
-  icon_t icon = find_icon(data,w,h,score); 
+  sample_t sample;
+  icon_t icon = find_icon(data,w,h,score,sample); 
 
   // Draw vertical/horizontal lines between the score digits
 
@@ -470,12 +489,10 @@ int main(int argc, char *argv[])
   return 0;
 #endif // MORE_DEBUG
 
-/*
   // To start a game press "1"
   xdo_send_keysequence_window_down(xdo, target, "1", 0);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   xdo_send_keysequence_window_up  (xdo, target, "1", 0);
-*/
 
   icon_t prev_icon = nothing;
   unsigned prev_score = 0;
@@ -484,6 +501,7 @@ int main(int argc, char *argv[])
 //  char cH = '0', cT = '0', cU = '0';
   icon_t live_icon = nothing;
   lvl_t  lvl       = bats;
+  sample_t sample;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -498,27 +516,23 @@ int main(int argc, char *argv[])
     //printf("%p\n", data);
     // 640x480
     unsigned score;
-    icon_t icon = find_icon(data,w,h,score); 
+    icon_t icon = find_icon(data,w,h,score,sample); 
 #ifndef SCREENSHOT
     if (score != prev_score) {
       const char *ib = (live_icon != nothing) ? icon_to_string(live_icon)
                                               : "(bonus)";
       if (live_icon == nothing)
         printf("    %8s %5d %5d\n",             ib, score-prev_score, score);
-      else
-        printf("%3d %8s %5d %5d\n", icon_count, ib, score-prev_score, score);
-      live_icon = nothing;        //                                **
+      else {
+        printf("%3d %8s %5d %5d ", icon_count, ib, score-prev_score, score);
+        printf("%x %x %x %x\n", sample.n, sample.s, sample.e, sample.w);
+      }
+      live_icon = nothing;        // n.b.
     }
 #endif
     if (prev_icon == nothing && icon != nothing) {
       send_key(xdo, target, icon);
-          icon_count++;
-      lvl_icon_count++;
-      if (live_icon != nothing) { // Would have been reset above at **
-        printf("There's been a murder!\n");
-        lvl_update(lvl,lvl_icon_count,icon);
-      }
-      live_icon = icon;
+      lvl_update(icon,live_icon,icon_count,lvl_icon_count,lvl);
     }
 
 #ifdef  SCREENSHOT
@@ -539,8 +553,8 @@ int main(int argc, char *argv[])
     prev_score = score;
     prev_icon  = icon;
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
-  } while (1);
-//  } while (icon_count < 150);
+//  } while (1);
+  } while (icon_count <= 156); // 156 challenge icons in the game
 
   xdo_free(xdo);
   return 0;

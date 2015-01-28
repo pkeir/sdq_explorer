@@ -1,0 +1,229 @@
+  1    right   150   150 ff7fa4cb ff586e84 ff453960 ff2c4d7b
+  2    right   200   350 fff1e77f ff88b2e1 ff67636a ff567dbc
+  3    right   250   600 ff766a65 ffecc869 ff5a6464 ff2f4462
+  4     left   300   900 ff30415d ff29324a ff1a1e30 ff8aa28b
+  5   button   350  1250 ff283960 ff94ac81 ff1e1e2f ff2c2b43
+  6   button   400  1650 ff233262 ff97ae87 ff8f7c77 ff29293e
+  7   button   450  2100 ff5379b2 ff88a8a5 ff403858 ff2a2a33
+     (bonus)  2100  4200
+  8   button   350  4550 ffaf8f2f ffe9ab7c ffe8a27a ffeea883
+  9   button   450  5000 ffe7d062 ffafbcb2 ffb53f13 ffdfb65e
+ 10   button   550  5550 ff645554 fff0cbb4 ff906623 ff2a2b23
+ 11    right   650  6200 ff826a83 ffdfcf7b ff737a97 ffd8dae1
+ 12   button   750  6950 ff9c6b46 ffb0b3a3 ff7899c3 ff413a19
+ 13   button   800  7750 ff5697a8 ffebc277 ffc9c5cf ffd6ced9
+ 14    right   800  8550 ffb69e79 ffdfcb83 ffc4c3c2 ff747888
+ 15   button   800  9350 ff475246 ffa0b99c ffdad4d9 ffcfb7a4
+     (bonus)  5150 14500
+ 16     left   400 14900 ffb3654a ff602e18 ffa2b6b8 ff5c3b1f
+     (bonus)   400 15300
+ 17   button   450 15750 ffab7794 ff916868 ff926198 ffbc6e7d
+ 18   button   600 16350 ffb0788a ffbb7c6e ff00fe00 ff82517b
+ 19   button   750 17100 ffb0726c ff986a6a ffd57d8b ffc77b8f
+ 20    right   900 18000 ffd47324 ffe8b84d ffe19f48 ffac6c48
+ 21     left  1000 19000 ffd6742a ffe3b765 ffe39a4d ffb37256
+ 22   button  1000 20000 ffcb5735 fff1cc69 ff00b500 ffa498a7
+ 23   button  1000 21000 ffb798ba ff4b2c35 ffbf764d ff99a85c
+ 24     down  1000 22000 ffc49cb2 ffd9a08c ffb3817a ff493a2e
+     (bonus)  6700 28700
+ 25    right   500 29200 ff5687b6 ffaebdbe ff939a9b ffcebeb6
+ 26       up   650 29850 ff2e3a6d ffa0b6be ff3f4c48 ff855639
+ 27   button   800 30650 ff33406b ffadbec1 ff96654c fff6d460
+ 28    right   950 31600 ff6b5e68 ff8caeb6 ffbc986b ffdbb65d
+ 29   button  1000 32600 ff6a6365 ff91aab7 ffbf966b ffdcb662
+     (bonus)  3900 36500
+ 30     left   250 36750 ff2e57ad ffbb8a49 ffd9c7ba ff7194c4
+ 31    right   350 37100 ff2f5db3 ffbc9355 ff7098c7 ff7097cd
+ 32     left   350 37450 ff3a75cc ffebbd7b ff455f9a ffc7d0e8
+ 33    right   450 37900 ff3670cc ffe9bb79 ff48609b ffc9d0eb
+ 34     down   550 38450 ff6ca7e7 ff00ffd8 ff87beeb ff91aadd
+ 35       up   650 39100 ff6ca7e5 ffffbc9f ff85b9e7 ff8fb2da
+     (bonus)  3000 42100
+ 36    right   300 42400 ffdd747d ff634161 ff9783a4 ff202e21
+ 37     left   400 42800 ffda787e ff673f5d ff838a5e ff2c332b
+ 38       up   500 43300 ffd25826 ff79526c ffe9ad5c fff2cf9f
+ 39   button   600 43900 ffd85e64 ffe28593 ff721c21 ffec99af
+ 40       up   700 44600 ffa25771 ffbb9f97 ff755a62 ffb57d38
+ 41   button   800 45400 ffb5647e ffc8ab9d ff764764 ff533838
+     (bonus)  3300 48700
+ 42     down   200 48900 ff917f94 ff828eaf ff9e90a0 ff928d9a
+ 43     left   250 49150 ff949193 ff656f91 ff6883b7 ffedba96
+ 44    right   300 49450 ffece17f ffdbd3c6 ff9d8b9c ff939eb8
+ 45     left   350 49800 ff6777a1 ffe2ddd7 ffeae5e1 fffaf0f0
+ 46     left   400 50200 fff0d877 ff394252 ff3e5f6f ff8e97ae
+ 47     left   450 50650 ffefd772 ff5a5e72 ff60535d ffa76c68
+     (bonus)  1950 52600
+ 48    right   500 53100 ff3d3c6c ffada257 ff00ffd8 ff6d695b
+ 49   button   700 53800 ff6d8fc5 ff59403d ff31413f ff6c6c5b
+ 50   button   900 54700 ff89a8e5 ff2a2a29 ff33364f ff2c2c41
+ 51   button  1100 55800 ff836236 ff4a6479 ff9e6d52 ffbbb473
+ 52   button  1200 57000 ff998a62 ff4c6979 fff0e1f9 ffc2b67d
+ 53    right  1200 58200 ff2a2f5d ff95805b ff72b0d4 ffcdb996
+ 54   button  1200 59400 ff6682b8 ff847e59 ff95791b ff292836
+ 55   button  1200 60600 ff6e739e ff9b9a8d ff5c5981 ffbeb399
+ 56   button  1200 61800 ffe1dfc5 ff7ab3b5 ff2e2634 ff928087
+ 57   button  1200 63000 ff1b1a23 ffb4a486 ff201c23 ffb0a483
+ 58   button  1200 64200 ff374676 ffb7b383 ff555842 ff998063
+ 59   button  1200 65400 ff4f6aa8 ff838b55 ffe3c3b9 ffb8af69
+ 60   button  1200 66600 ff4a6ba7 ffbabc86 ff363b59 ffb9a871
+ 61    right  1200 67800 ff4b64a5 ff85580f ff2a324f ffb6a976
+ 62   button  1200 69000 ff4e69a6 ffbabc84 ff2d3552 ffb4a870
+ 63   button  1200 70200 ff4f6ea7 ffaea363 ff313857 ff784432
+     (bonus) 17600 87800
+ 64    right   500 88300 ff789ed7 ff799eb3 ff1c1d2a ff909393
+ 65       up   750 89050 ff42548a ff666e8b ff2b3b69 ff85a3b8
+ 66   button  1000 90050 ff2e2a58 ff51458a ff65859a ffdf865d
+ 67     left  1250 91300 ff252434 ff779eb6 ff1f202f ff4a5365
+ 68   button  1500 92800 ff302628 ff9b9bc5 ffb64714 ff212644
+ 69   button  1500 94300 ff475a8d ff26384d ff962e05 ff637f93
+ 70     left  1500 95800 ff465690 ff1e3450 ff223067 ff6c8ba4
+ 71   button  1500 97300 ffd4a2a5 fff0eee9 ff242640 ff262942
+ 72   button  1500 98800 ff7496ce ff283757 ff365476 ff00b500
+ 73   button  1500 100300 ff314280 ff2b3f53 ff3e506f ff281f2d
+ 74   button  1500 101800 ff8aa7da ff7d98b4 ff2a2532 ffa57598
+     (bonus) 14000 115800
+ 75     left   650 116450 ff6b524d ff6884be ff4b8a86 ff82adc0
+ 76       up  1050 117500 ffa8b670 ff99ae64 ffe1c154 ff819d8e
+ 77       up  1450 118950 ff9bb16d ff903d2c ff664900 ff737473
+ 78     left  1850 120800 ff35494b ff252538 ff749aad ffcb9978
+ 79       up  2250 123050 ff33434d ff212533 ff759da5 ffcc9980
+ 80     left  2250 125300 ff555f42 ffa4ab7c ff57765b ff5f3a27
+ 81    right  2250 127550 ff181919 ffa5a773 ff5c7558 ff613d22
+     (bonus) 11750 139300
+ 82    right   550 139850 ffe6c76c ff977841 ffe1d7a9 fff1c3b8
+ 83     left   850 140700 fff0d5b7 ffeacc8a ffe5cbb4 fff2daad
+ 84     down  1150 141850 ffe3bb73 ffd7ac62 ffe1b772 ffd4a664
+ 85    right  1450 143300 ffe6bd72 ffddab61 ffe7b373 ffdba76b
+ 86       up  1600 144900 ffe6b565 ff375055 ffe7aa69 ffdaa25c
+ 87     left  1600 146500 ff9c5c26 ff2c4e4b ff471e00 ff5f2a10
+ 88     left  1600 148100 ff282129 ffd8b170 ff6d3e0c ffc48760
+ 89     left  1600 149700 ffe2bb6d ffcea469 ffd1ad68 ffdfb370
+ 90       up  1600 151300 ffce9e65 ffe2c476 ffdbaf6c ffdeb873
+ 91    right  1600 152900 ffeac65b ffdbb07b ff20302c ffd49f84
+ 92   button  1600 154500 ffebc85a ffb8a572 ff9a694e ffd7a288
+     (bonus) 15200 169700
+ 93   button   600 170300 ff5b2d25 ff48739a ffbc9caf ff827ab6
+ 94   button   950 171250 ff582f22 ff46719c ffc29eb3 ff7f7c97
+ 95   button   950 172200 ff92361e ff5f8cbc ffcf695f ff80505d
+ 96   button  1300 173500 ff8d3818 ff54618c ff738a9c ff845054
+ 97   button  1650 175150 ffe7bc63 ffa087a4 fff6c8a4 ffd76c75
+ 98   button  2000 177150 ffd75872 ffd28b97 ffae503e ffda697a
+ 99   button  2000 179150 ffd1a957 fff2d16c ff407293 ff463034
+100   button  2000 181150 ffd3a957 ff3e759e ff3d7094 ff443031
+101       up  2000 183150 ffdcc25b ff6f5968 ffc56868 ffcb6c5f
+102   button  2000 185150 ffe37891 ffc1534e ffbfcfb9 ffce5f65
+     (bonus) 16500 201650
+103     down   700 202350 ff949fd7 ffa1b57d ffdaaf9e ff72a8d5
+104       up  1150 203500 ff737592 ff91ac6c ffcaae80 ff9c7156
+105    right  1600 205100 ff4b62a0 ff6a7a96 ff2a3365 ff2a366f
+106     down  2050 207150 ff455e9c ff2c3d74 ff28366d ff133a6c
+107    right  2500 209650 ff746b83 ff82a5b3 ff553c39 ff6576ad
+108       up  2500 212150 ff6b6780 ff30407e ff523c38 ff4f5e7e
+     (bonus) 10500 222650
+109    right   750 223400 ffe7e6e7 ffddc2b3 ffd9e2e7 ffb5bdd4
+110     left  1250 224650 ff7c96c6 ff3e5192 ff918393 ff7e96c7
+111    right  1750 226400 ff936c61 ffdbdfe9 ff38488c ff728cc3
+112     left  2250 228650 ffaf96b1 ff7c89b8 ff3a528b ff7c96c4
+113     left  2750 231400 ffc9ab98 ffd6e8f3 ffaf967b ffdfcaae
+114       up  2750 234150 ffb3978d ffd9e3eb ff8e7860 ffe2ccb4
+115     down  2750 236900 ffa1d1fd ffd1b9b0 ffccddf5 ffbda49b
+116     left  2750 239650 ffdedfe2 ff9bbedc ffbbc49a ffd8e1f3
+117    right  2750 242400 ffb7998e ff3f66b2 ff4b69ad ffdedde6
+118       up  2750 245150 ff5c7aa5 ff1e5186 ff6a96db ff4982c4
+     (bonus) 21750 266900
+119    right   800 267700 ffb99696 ff6688d0 ff21408b ffd5d9eb
+120    right  1350 269050 ffced8d8 ffe5cbc6 ffbc9c96 ff768fce
+121       up  1900 270950 ff688ad2 ff6685ce ff3c59a5 ffa27c81
+122    right  2450 273400 ffe1c0b1 ff6a94cf ff7d9fd5 ffdceaff
+123     left  3000 276400 ff6d5159 ffe2c8b3 ff759bd4 ff00ffd8
+124     left  3000 279400 ffe0bb4c ffe3ccb4 ff6f8bbb ff637bbf
+125     down  3000 282400 ffebca50 ffecd7c9 ff9b7f85 ff856d84
+126    right  3000 285400 ff8cbfe3 ff7798d6 ff949aa1 ffb0cfdf
+     (bonus) 19250 304650
+127     left   850 305500 ff6d400c ffd4a77d ffc09d7f ff8893af
+128       up  1450 306950 ffdfb65c ffce5e3b ffbf9b7a ff8e91aa
+129   button  2050 309000 ffbc9f86 ffe7c396 ff663506 ffcca891
+130    right  2650 311650 ffc0a184 ffe9c095 ff697343 ffc9ad95
+131       up  3250 314900 ff5c444c ff272028 ff1b1c1f ff252128
+     (bonus) 10500 325400
+132       up   900 326300 ff849e66 ffac5241 ff673842 ff463328
+133       up  1550 327850 ff829361 ffc35f3f ff582b37 ff4a3124
+134       up  2200 330050 ff8b9f6f ffaf4932 ff73494f ff483327
+135       up  2850 332900 ff5c3b21 ff5d3c22 ff8b4c30 ff643f2a
+136       up  3500 336400 ff5d3e21 ff482910 ff935130 ff674229
+137       up  3500 339900 ff613e1d ff5b371c ff8f5131 ff644027
+     (bonus) 14500 354400
+138     left  1000 355400 ff98aaa7 fff8e9e5 ff412e1f fff4d6b3
+     (bonus)  1000 356400
+139       up  1000 357400 ff2a2811 ff523d1a ff92acac ff3c5849
+     (bonus)  1000 358400
+140   button  1000 359400 ff241f2c ff32335a ffae6284 ff675d99
+141   button  1750 361150 ff241f2c ff7fb8ec ffb1617f ff6d5c9d
+     (bonus)  2750 363900
+142     left  1000 364900 ff625a68 ff837f9e ffa49e9a ff8c95a7
+143    right  1800 366700 ff5a4330 ff857076 ff82485b ff8a4849
+144       up  2600 369300 ff5a4537 ff967b83 ff734644 ff8a4849
+145     left  3400 372700 ff434161 ff65405a ff959aa8 ff894953
+     (bonus)  8800 381500
+146    right  1000 382500 ffd98e5e ff36262a ff37252b ff442f2d
+147   button  2000 384500 ffbe4723 ff341e2b ff38241d ff5e3d39
+148     left  3000 387500 ffe1b676 ffcf9a4e ff302722 ffa44d33
+149       up  4000 391500 ffe3c071 fff5cc8c ff171112 fff2e3e2
+150    right  5000 396500 ff594532 ffa09db1 ff976c94 ff1d1316
+151     left  6000 402500 ffd4ca78 fff4d3c3 ffcc5427 ff181717
+152   button  6000 408500 ff564231 ffa6a2b4 ff9c7591 ff96577d
+153   button  6000 414500 ff554036 ffa5a2b8 ffe0b76c ff2d1615
+154    right  6000 420500 ff7b561f ff5a3e1e ffcb9c6a ffc8a066
+155     left  6000 426500 ff794c18 ff573f1a ffd49b67 ffc39c68
+156   button  6000 432500 ff6b4410 ff593f1b ffce9a5e ffebbc63
+     (bonus)  4000 436500
+     (bonus)  4000 440500
+     (bonus)  4000 444500
+     (bonus)  4000 448500
+     (bonus)  4000 452500
+     (bonus)  4000 456500
+     (bonus)  4000 460500
+     (bonus)  4000 464500
+     (bonus)  4000 468500
+     (bonus)  4000 472500
+     (bonus)  4000 476500
+     (bonus)  4000 480500
+     (bonus)  4000 484500
+     (bonus)  4000 488500
+     (bonus)  4000 492500
+     (bonus)  4000 496500
+     (bonus)  4000 500500
+     (bonus)  4000 504500
+     (bonus)  4000 508500
+     (bonus)  4000 512500
+     (bonus)  4000 516500
+     (bonus)  4000 520500
+     (bonus)  4000 524500
+     (bonus)  4000 528500
+     (bonus)  4000 532500
+     (bonus)  4000 536500
+     (bonus)  4000 540500
+     (bonus)  4000 544500
+     (bonus)  4000 548500
+     (bonus)  4000 552500
+     (bonus)  4000 556500
+     (bonus)  4000 560500
+     (bonus)  4000 564500
+     (bonus)  4000 568500
+     (bonus)  4000 572500
+     (bonus)  4000 576500
+     (bonus)  4000 580500
+     (bonus)  4000 584500
+     (bonus)  4000 588500
+     (bonus)  4000 592500
+     (bonus)  4000 596500
+     (bonus)  4000 600500
+     (bonus)  4000 604500
+     (bonus)  4000 608500
+     (bonus)  4000 612500
+     (bonus)  4000 616500
+     (bonus)  4000 620500
+     (bonus)  4000 624500
+     (bonus)  4000 628500
+     (bonus)  4000 632500
+     (bonus)  4000 636500
