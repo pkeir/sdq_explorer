@@ -28,17 +28,17 @@ Window find_window(xdo_t *xdo, const char *str)
   return fnd_window;
 }
 
-void send_key(xdo_t *xdo, Window target, icon_t x)
+void send_key(xdo_t *xdo, Window target, prompt_t x)
 {
   int key_delay = 100;
   const char *sz_key;
   switch (x) {
-    case left:   sz_key = "Left";  break;
-    case right:  sz_key = "Right"; break;
-    case up:     sz_key = "Up";    break;
-    case down:   sz_key = "Down";  break;
-    case button: sz_key = "space"; break;
-    default:                       break;
+    case prompt_t::L: sz_key = "Left";  break;
+    case prompt_t::R: sz_key = "Right"; break;
+    case prompt_t::U: sz_key = "Up";    break;
+    case prompt_t::D: sz_key = "Down";  break;
+    case prompt_t::X: sz_key = "space"; break;
+    default: printf("error: prompt unrecognised in send_key."); break;
   }
 
   xdo_send_keysequence_window_down(xdo, target, sz_key, 0);

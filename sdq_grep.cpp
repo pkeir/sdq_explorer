@@ -58,6 +58,37 @@ unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
 {
 }
 
+// offset: how many *pixels* into an image is this icon (no switch on pairs).
+level_t level_from_icon_offset(const unsigned icon_offset)
+{
+  switch (icon_offset) {
+    case 138628: return bats;           //(388,216)
+    case 188506: return gulley;         //(346,294)
+    case 106583: return pyramid_steps;  //(343,166)
+    case 128191: return water_lift;     //(191,200)
+    case 116583: return serpents;       //(103,182)
+    case 138568: return mummy;          //(328,216)
+    case 200011: return totem;          //(331,312)
+    case 179388: return fire_woman;     //(188,280)
+    case 148888: return skeletons;      //(408,232)
+    case 179528: return hands;          //(328,280)
+    case 179508: return dragon;         //(308,280)
+    case 168083: return jellyfish;      //(403,262)
+    case 199911: return snake;          //(231,312)
+    case 167946: return river_jump;     //(266,262)
+    case 107908: return river_logs;     //(388,168)
+    case 128388: return river_raft;     //(388,200)
+    case 189651: return windmill;       //(211,296)
+    case 135986: return chariots;       //(306,212)
+    case  97471: return stair_chute;    //(191,152)
+    case 176886: return closing_walls;  //(246,276)
+    case 147483: return winged_goblins; //(283,230)
+    case 148791: return laser_eyes;     //(311,232)
+    case 159168: return witch;          //(448,248)
+    default: printf("error: offset not recognised."); 
+  }
+}
+
 template <std::size_t X, std::size_t Y>
 inline
 unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
@@ -211,20 +242,20 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
   return score;
 }
 
-inline const char *icon_to_string(const icon_t icon) {
+inline const char *prompt_to_string(const prompt_t icon) {
   switch (icon) {
     case nothing: return "nothing";
-    case left:    return "left";
-    case right:   return "right";
-    case up:      return "up";
-    case down:    return "down";
-    case button:  return "button";
+    case L:    return "left";
+    case R:   return "right";
+    case U:      return "up";
+    case D:    return "down";
+    case X:  return "button";
   };
-  return "error in icon_to_string";
+  return "error in prompt_to_string";
 }
 
-inline const char *lvl_to_string(const lvl_t lvl) {
-  switch (lvl) {
+inline const char *level_to_string(const level_t level) {
+  switch (level) {
     case bats           : return "bats";
     case totem          : return "totem";
     case fire_woman     : return "fire_woman";
@@ -249,11 +280,11 @@ inline const char *lvl_to_string(const lvl_t lvl) {
     case laser_eyes     : return "laser_eyes";
     case witch          : return "witch";
   };
-  return "error in lvl_to_string";
+  return "error in level_to_string";
 }
 
-icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
-                 sample_t &sample, unsigned &xcoord, unsigned &ycoord)
+prompt_t find_prompt(DATA32 *data, int width, int height, unsigned &score,
+                     sample_t &sample, unsigned &icon_offset)
 {
 //  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
 //  const DATA32 arrow_blue   = -16711704; // ff00ffe8
@@ -266,7 +297,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
   const DATA32 score_white  = 0xfffcffd9;
   const DATA32 score_red    = 0xfffd0100; // same as arrow_red
 
-  static icon_t last = nothing;
+  static prompt_t last = nothing;
 //  unsigned score     = 0;
   unsigned red_run   = 0,   red_start, red_i;
   unsigned blue_run  = 0,  blue_start, blue_i;
@@ -349,8 +380,9 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last != right)
 //          printf("%3d %3d ", red_start, i);
 //        last = right;
-        xcoord = blue_start; ycoord = blue_i;
-        return right;
+        // xcoord = blue_start; ycoord = blue_i;
+        icon_offset = (blue_i*width)+blue_start;
+        return prompt_t::R;
 }
 //      else if (blue_start==red_start-(blue_run+1))
       else if (blue_start==red_start-blue_run)
@@ -358,8 +390,9 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last != left)
 //          printf("%3d %3d ", blue_start, i);
 //        last = left;
-        xcoord = blue_start; ycoord = blue_i;
-        return left;
+        // xcoord = blue_start; ycoord = blue_i;
+        icon_offset = (blue_i*width)+blue_start;
+        return prompt_t::L;
 }
     }
     if (red_run>30)
@@ -372,16 +405,18 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last!=down)
 //          printf("%3d %3d ", red_start, i);
 //        last = down;
-        xcoord = blue_start; ycoord = blue_i;
-        return down;
+        // xcoord = blue_start; ycoord = blue_i;
+        icon_offset = (blue_i*width)+blue_start;
+        return prompt_t::D;
 }
       else
 {
 //        if (last != up)
 //          printf("%3d %3d ", red_start, i);
 //        last = up;
-        xcoord = blue_start; ycoord = blue_i;
-        return up;
+        // xcoord = blue_start; ycoord = blue_i;
+        icon_offset = (blue_i*width)+blue_start;
+        return prompt_t::U;
 }
     }
     if (green_run > 40)
@@ -389,8 +424,9 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //      if (last != button)
 //        printf("%3d %3d ", green_start, i);
 //      last = button;
-      xcoord = green_start; ycoord = green_i;
-      return button;
+      // xcoord = green_start; ycoord = green_i;
+      icon_offset = (green_i*width)+green_start;
+      return prompt_t::X;
 }
 /*    if (white_run[0][0] > 0) {
       printf("[%d,%2d,%d] (%5s) : ", i, white_run[0][0], white_start[0][0], "white");
@@ -429,7 +465,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 
 struct icon_data_t {
   unsigned reward;
-  icon_t   icon;
+  prompt_t   icon;
   sample_t sample;
 };
 
@@ -454,11 +490,11 @@ void load_sdq_play_data(std::array<icon_data_t,N> &play_data)
       play_data[i].reward = reward;
       play_data[i].sample = s;
       switch (str[0]) {
-        case 'u' : play_data[i].icon = up;     break;
-        case 'd' : play_data[i].icon = down;   break;
-        case 'l' : play_data[i].icon = left;   break;
-        case 'r' : play_data[i].icon = right;  break;
-        case 'b' : play_data[i].icon = button; break;
+        case 'u' : play_data[i].icon = prompt_t::U; break;
+        case 'd' : play_data[i].icon = prompt_t::D; break;
+        case 'l' : play_data[i].icon = prompt_t::L; break;
+        case 'r' : play_data[i].icon = prompt_t::R; break;
+        case 'b' : play_data[i].icon = prompt_t::X; break;
       };
       i++;
     }
@@ -511,8 +547,9 @@ int main(int argc, char *argv[])
   DATA32 *data = imlib_image_get_data();
   unsigned score;
   sample_t sample;
-  unsigned xcoord, ycoord;
-  icon_t icon = find_icon(data,w,h,score,sample,xcoord,ycoord); 
+  // unsigned xcoord, ycoord;
+  unsigned icon_offset;
+  prompt_t icon = find_prompt(data,w,h,score,sample,icon_offset); 
 
   // Draw vertical/horizontal lines between the score digits
 
@@ -553,15 +590,16 @@ int main(int argc, char *argv[])
   xdo_send_keysequence_window_up  (xdo, target, "1", 0);
 */
 
-  icon_t prev_icon = nothing;
+  prompt_t prev_icon = nothing;
   unsigned prev_score = 0;
 //  for (int i = 0; i < nimages; i++) {
-  unsigned icon_count = 0, lvl_icon_count = 0;
+  unsigned icon_count = 0, level_icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
-  icon_t live_icon = nothing;
-  lvl_t  lvl       = bats;
+  prompt_t live_icon = nothing;
+  level_t  level     = bats;
   sample_t sample;
-  unsigned live_xcoord, live_ycoord;
+//  unsigned live_xcoord, live_ycoord;
+  unsigned live_icon_offset;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -576,20 +614,22 @@ int main(int argc, char *argv[])
     //printf("%p\n", data);
     // 640x480
     unsigned score;
-    unsigned xcoord, ycoord; 
-    icon_t icon = find_icon(data,w,h,score,sample,xcoord,ycoord); 
+    // unsigned xcoord, ycoord; 
+    unsigned icon_offset;
+    prompt_t icon = find_prompt(data,w,h,score,sample,icon_offset); 
 #ifndef SCREENSHOT
     if (score != prev_score) {
-      const char *ib = (live_icon != nothing) ? icon_to_string(live_icon)
+      const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
                                               : "(bonus)";
       if (live_icon == nothing) {
         printf("        %8s %5d %5d\n", ib, score-prev_score, score);
-        lvl_icon_count = 0; // But there's no bonus if you die on a level.
+        level_icon_count = 0; // But there's no bonus if you die on a level.
       } else {
-        printf("%3d %2d %8s %5d %5d\n", icon_count, lvl_icon_count,
+        printf("%3d %2d %8s %5d %5d\n", icon_count, level_icon_count,
                                         ib, score-prev_score, score);
-        if (lvl_icon_count==1) {
-          printf("(%d,%d)\n", live_xcoord, live_ycoord);
+        if (level_icon_count==1) {
+//          printf("(%d,%d)\n", live_xcoord, live_ycoord);
+          printf("(%d)\n", live_icon_offset);
         }
       }
       live_icon = nothing;        // n.b.
@@ -599,15 +639,23 @@ int main(int argc, char *argv[])
 //    unsigned closest = find_closest(sample,play_data);
 //    printf("%x %x %x %x %d", sample.n, sample.s, sample.e, sample.w, closest);
       icon_count++;
-      lvl_icon_count++;
+      level_icon_count++;
       // live_icon is reset the last time the score was increased
       if (live_icon != nothing) {
         printf("There's been a murder!");
-        lvl_icon_count = 0;
+        level_icon_count = 1;
+      }
+      if (0) { // if level has been successfully completed
+        level_icon_count = 1;
+      }
+      if (level_icon_count==1) {
+        level = level_from_icon_offset(icon_offset);
       }
       live_icon   = icon;
-      live_xcoord = xcoord;
-      live_ycoord = ycoord;
+//      live_xcoord = xcoord;
+//      live_ycoord = ycoord;
+      live_icon_offset = icon_offset;
+
       send_key(xdo, target, icon);
     }
 
