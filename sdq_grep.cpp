@@ -58,19 +58,6 @@ unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
 {
 }
 
-inline void lvl_update(icon_t icon, icon_t &live_icon,
-                       unsigned &icon_count, unsigned &lvl_icon_count,
-                       lvl_t &lvl) {
-
-  icon_count++;
-  lvl_icon_count++;
-  // live_icon is reset the last time the score was increased
-  if (live_icon != nothing) {
-    printf("There's been a murder!");
-  }
-  live_icon = icon;
-}
-
 template <std::size_t X, std::size_t Y>
 inline
 unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
@@ -266,7 +253,7 @@ inline const char *lvl_to_string(const lvl_t lvl) {
 }
 
 icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
-                 sample_t &sample)
+                 sample_t &sample, unsigned &xcoord, unsigned &ycoord)
 {
 //  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
 //  const DATA32 arrow_blue   = -16711704; // ff00ffe8
@@ -281,17 +268,17 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 
   static icon_t last = nothing;
 //  unsigned score     = 0;
-  unsigned red_run   = 0,   red_start;
-  unsigned blue_run  = 0,  blue_start;
-  unsigned green_run = 0, green_start;
+  unsigned red_run   = 0,   red_start, red_i;
+  unsigned blue_run  = 0,  blue_start, blue_i;
+  unsigned green_run = 0, green_start, green_i;
   using ua63_t = std::array<std::array<unsigned,score_digits::num_hsamples>,6>; // std::array allows: white_run = zero; (now unneeded?)
   ua63_t white_run{}, white_start{}, zero{};
   unsigned white[6][score_digits::num_hsamples][score_digits::num_fields]{};
   bool     arrow_tail_up_or_down = false;
-  sample.n = data[(  height/4)*width+(width/2)];
-  sample.s = data[(3*height/4)*width+(width/2)];
-  sample.e = data[(  height/2)*width+(width/4)];
-  sample.w = data[(  height/2)*width-(width/4)];
+//  sample.n = data[(  height/4)*width+(width/2)];
+//  sample.s = data[(3*height/4)*width+(width/2)];
+//  sample.e = data[(  height/2)*width+(width/4)];
+//  sample.w = data[(  height/2)*width-(width/4)];
 
   for (int i = 0; i < height; i++) {
     int count = 0;
@@ -301,16 +288,16 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
       DATA32 prev = data[i*width+j-1];
 
       if      (curr==arrow_red) {
-        if (curr!=prev) { red_run = 1;   red_start  = j;  }
-        else            { red_run++;                      }
+        if (curr!=prev) { red_run = 1;    red_start  = j; red_i = i;  }
+        else            { red_run++;                                  }
       }
       else if (curr==arrow_blue) {
-        if (curr!=prev) { blue_run = 1;  blue_start  = j; }
-        else            { blue_run++;                     }
+        if (curr!=prev) { blue_run = 1;  blue_start  = j; blue_i = i; }
+        else            { blue_run++;                                 }
       }
       else if (curr==button_green) {
-        if (curr!=prev) { green_run = 1; green_start = j; }
-        else            { green_run++;                    }
+        if (curr!=prev) { green_run = 1; green_start = j; green_i = i; }
+        else            { green_run++;                                 }
       }
       else if (rgb_dist_lte(curr,score_white,1)) {
         if (j >= 20 && j < (20+6*40)) {
@@ -362,6 +349,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last != right)
 //          printf("%3d %3d ", red_start, i);
 //        last = right;
+        xcoord = blue_start; ycoord = blue_i;
         return right;
 }
 //      else if (blue_start==red_start-(blue_run+1))
@@ -370,6 +358,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last != left)
 //          printf("%3d %3d ", blue_start, i);
 //        last = left;
+        xcoord = blue_start; ycoord = blue_i;
         return left;
 }
     }
@@ -383,6 +372,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last!=down)
 //          printf("%3d %3d ", red_start, i);
 //        last = down;
+        xcoord = blue_start; ycoord = blue_i;
         return down;
 }
       else
@@ -390,6 +380,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //        if (last != up)
 //          printf("%3d %3d ", red_start, i);
 //        last = up;
+        xcoord = blue_start; ycoord = blue_i;
         return up;
 }
     }
@@ -398,6 +389,7 @@ icon_t find_icon(DATA32 *data, int width, int height, unsigned &score,
 //      if (last != button)
 //        printf("%3d %3d ", green_start, i);
 //      last = button;
+      xcoord = green_start; ycoord = green_i;
       return button;
 }
 /*    if (white_run[0][0] > 0) {
@@ -519,7 +511,8 @@ int main(int argc, char *argv[])
   DATA32 *data = imlib_image_get_data();
   unsigned score;
   sample_t sample;
-  icon_t icon = find_icon(data,w,h,score,sample); 
+  unsigned xcoord, ycoord;
+  icon_t icon = find_icon(data,w,h,score,sample,xcoord,ycoord); 
 
   // Draw vertical/horizontal lines between the score digits
 
@@ -567,8 +560,8 @@ int main(int argc, char *argv[])
 //  char cH = '0', cT = '0', cU = '0';
   icon_t live_icon = nothing;
   lvl_t  lvl       = bats;
-  unsigned closest;
   sample_t sample;
+  unsigned live_xcoord, live_ycoord;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -583,25 +576,39 @@ int main(int argc, char *argv[])
     //printf("%p\n", data);
     // 640x480
     unsigned score;
-    icon_t icon = find_icon(data,w,h,score,sample); 
+    unsigned xcoord, ycoord; 
+    icon_t icon = find_icon(data,w,h,score,sample,xcoord,ycoord); 
 #ifndef SCREENSHOT
     if (score != prev_score) {
       const char *ib = (live_icon != nothing) ? icon_to_string(live_icon)
                                               : "(bonus)";
-      if (live_icon == nothing)
-        printf("    %8s %5d %5d\n",             ib, score-prev_score, score);
-      else {
-        printf("%3d %8s %5d %5d\n", icon_count, ib, score-prev_score, score);
-//        printf("%d\n", closest);
+      if (live_icon == nothing) {
+        printf("        %8s %5d %5d\n", ib, score-prev_score, score);
+        lvl_icon_count = 0; // But there's no bonus if you die on a level.
+      } else {
+        printf("%3d %2d %8s %5d %5d\n", icon_count, lvl_icon_count,
+                                        ib, score-prev_score, score);
+        if (lvl_icon_count==1) {
+          printf("(%d,%d)\n", live_xcoord, live_ycoord);
+        }
       }
       live_icon = nothing;        // n.b.
     }
 #endif
     if (prev_icon == nothing && icon != nothing) {
-      closest = find_closest(sample,play_data);
-      printf("%x %x %x %x %d", sample.n, sample.s, sample.e, sample.w, closest);
+//    unsigned closest = find_closest(sample,play_data);
+//    printf("%x %x %x %x %d", sample.n, sample.s, sample.e, sample.w, closest);
+      icon_count++;
+      lvl_icon_count++;
+      // live_icon is reset the last time the score was increased
+      if (live_icon != nothing) {
+        printf("There's been a murder!");
+        lvl_icon_count = 0;
+      }
+      live_icon   = icon;
+      live_xcoord = xcoord;
+      live_ycoord = ycoord;
       send_key(xdo, target, icon);
-      lvl_update(icon,live_icon,icon_count,lvl_icon_count,lvl);
     }
 
 #ifdef  SCREENSHOT
