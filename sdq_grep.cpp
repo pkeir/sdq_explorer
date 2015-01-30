@@ -59,7 +59,7 @@ unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
 }
 
 // offset: how many *pixels* into an image is this icon (no switch on pairs).
-level_t level_from_icon_offset(const unsigned icon_offset)
+level_id_t level_from_icon_offset(const unsigned icon_offset)
 {
   switch (icon_offset) {
     case 138628: return bats;           //(388,216)
@@ -87,6 +87,39 @@ level_t level_from_icon_offset(const unsigned icon_offset)
     case 159168: return witch;          //(448,248)
     default: printf("error: offset not recognised."); 
   }
+}
+
+bool level_completed(const level_id_t level,const unsigned level_icon_count) {
+
+  unsigned level_size;
+   
+  switch (level) {
+    case bats           : level_size = level_t<bats>::type::size(); break;
+    case totem          : level_size = level_t<totem>::type::size(); break;
+    case fire_woman     : level_size = level_t<fire_woman>::type::size(); break;
+    case pyramid_steps  : level_size = level_t<pyramid_steps>::type::size(); break;
+    case water_lift     : level_size = level_t<water_lift>::type::size(); break;
+    case serpents       : level_size = level_t<serpents>::type::size(); break;
+    case mummy          : level_size = level_t<mummy>::type::size(); break;
+    case gulley         : level_size = level_t<gulley>::type::size(); break;
+    case skeletons      : level_size = level_t<skeletons>::type::size(); break;
+    case hands          : level_size = level_t<hands>::type::size(); break;
+    case snake          : level_size = level_t<snake>::type::size(); break;
+    case dragon         : level_size = level_t<dragon>::type::size(); break;
+    case jellyfish      : level_size = level_t<jellyfish>::type::size(); break;
+    case river_jump     : level_size = level_t<river_jump>::type::size(); break;
+    case river_logs     : level_size = level_t<river_logs>::type::size(); break;
+    case river_raft     : level_size = level_t<river_raft>::type::size(); break;
+    case windmill       : level_size = level_t<windmill>::type::size(); break;
+    case chariots       : level_size = level_t<chariots>::type::size(); break;
+    case stair_chute    : level_size = level_t<stair_chute>::type::size(); break;
+    case closing_walls  : level_size = level_t<closing_walls>::type::size(); break;
+    case winged_goblins : level_size = level_t<winged_goblins>::type::size(); break;
+    case laser_eyes     : level_size = level_t<laser_eyes>::type::size(); break;
+    case witch          : level_size = level_t<witch>::type::size(); break;
+    default: printf("error: no matching level in level_completed"); break;
+  };
+  return (level_size+1)==level_icon_count;
 }
 
 template <std::size_t X, std::size_t Y>
@@ -245,16 +278,16 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
 inline const char *prompt_to_string(const prompt_t icon) {
   switch (icon) {
     case nothing: return "nothing";
-    case L:    return "left";
-    case R:   return "right";
-    case U:      return "up";
-    case D:    return "down";
-    case X:  return "button";
+    case L:       return "left";
+    case R:       return "right";
+    case U:       return "up";
+    case D:       return "down";
+    case X:       return "button";
   };
   return "error in prompt_to_string";
 }
 
-inline const char *level_to_string(const level_t level) {
+inline const char *level_id_to_string(const level_id_t level) {
   switch (level) {
     case bats           : return "bats";
     case totem          : return "totem";
@@ -280,7 +313,7 @@ inline const char *level_to_string(const level_t level) {
     case laser_eyes     : return "laser_eyes";
     case witch          : return "witch";
   };
-  return "error in level_to_string";
+  return "error in level_id_to_string";
 }
 
 prompt_t find_prompt(DATA32 *data, int width, int height, unsigned &score,
@@ -596,7 +629,7 @@ int main(int argc, char *argv[])
   unsigned icon_count = 0, level_icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
   prompt_t live_icon = nothing;
-  level_t  level     = bats;
+  level_id_t   level = bats;
   sample_t sample;
 //  unsigned live_xcoord, live_ycoord;
   unsigned live_icon_offset;
@@ -621,16 +654,17 @@ int main(int argc, char *argv[])
     if (score != prev_score) {
       const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
                                               : "(bonus)";
+      const char *lstr = level_id_to_string(level);
       if (live_icon == nothing) {
-        printf("        %8s %5d %5d\n", ib, score-prev_score, score);
-        level_icon_count = 0; // But there's no bonus if you die on a level.
+        printf("        %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
+//        level_icon_count = 0; // But there's no bonus if you die on a level.
       } else {
-        printf("%3d %2d %8s %5d %5d\n", icon_count, level_icon_count,
-                                        ib, score-prev_score, score);
-        if (level_icon_count==1) {
+        printf("%3d %2d %8s %5d %5d %s\n", icon_count, level_icon_count,
+                                           ib, score-prev_score, score, lstr);
+       /* if (level_icon_count==1) {
 //          printf("(%d,%d)\n", live_xcoord, live_ycoord);
           printf("(%d)\n", live_icon_offset);
-        }
+        }*/
       }
       live_icon = nothing;        // n.b.
     }
@@ -645,8 +679,8 @@ int main(int argc, char *argv[])
         printf("There's been a murder!");
         level_icon_count = 1;
       }
-      if (0) { // if level has been successfully completed
-        level_icon_count = 1;
+      if (level_completed(level,level_icon_count)) {
+        level_icon_count = 1;  // then level has been successfully completed
       }
       if (level_icon_count==1) {
         level = level_from_icon_offset(icon_offset);
