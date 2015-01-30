@@ -12,10 +12,10 @@ enum level_t { bats, totem, fire_woman, pyramid_steps, water_lift, serpents,
 const prompt_t level_bats          [] = {R,R,R,L,X,X,X};
 
 template <prompt_t...>
-  struct prompts {};
+  struct prompt_seq_t {};
 
 template <level_t,typename>
-  struct num_prompts;
+  struct prompts;
 
 template <>
 struct num_prompts<bats,prompts<R,L>> {
