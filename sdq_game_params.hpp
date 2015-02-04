@@ -11,6 +11,8 @@ enum level_id_t { bats, totem, fire_woman, pyramid_steps, water_lift, serpents,
                   stair_chute, closing_walls, winged_goblins, laser_eyes,
                   witch };
 
+static_assert(sizeof(level_id_t)==4,"");
+
 using bats_t       = integer_sequence<prompt_t,R,R,R,L,X,X,X>;
 using totem_t      = integer_sequence<prompt_t,L,R,L,R,D,U>;
 using fire_woman_t = integer_sequence<prompt_t,R,L,U,X,U,X>;

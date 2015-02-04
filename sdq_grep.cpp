@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <list>
 #include <cstring>     // memset
 #include <chrono>
 #include <thread>
@@ -85,7 +86,7 @@ level_id_t level_from_icon_offset(const unsigned icon_offset)
     case 147483: return winged_goblins; //(283,230)
     case 148791: return laser_eyes;     //(311,232)
     case 159168: return witch;          //(448,248)
-    default: printf("error: offset not recognised."); 
+    default: printf("error: offset not recognised."); return bats;
   }
 }
 
@@ -119,7 +120,7 @@ bool level_completed(const level_id_t level,const unsigned level_icon_count) {
     case witch          : level_size = level_t<witch>::type::size(); break;
     default: printf("error: no matching level in level_completed"); break;
   };
-  return (level_size+1)==level_icon_count;
+  return level_size==level_icon_count;
 }
 
 template <std::size_t X, std::size_t Y>
@@ -554,6 +555,13 @@ unsigned find_closest(const sample_t sample,
   return result;
 }
 
+struct qte_info {
+  std::list<unsigned> bonuses;
+  std::list<prompt_t> moves;
+  unsigned normal_bonus = 0;
+  unsigned attempts     = 0;
+};
+
 int main(int argc, char *argv[])
 {
   Imlib_Image image   = NULL; // ImlibImage (no underscore)
@@ -626,12 +634,14 @@ int main(int argc, char *argv[])
   prompt_t prev_icon = nothing;
   unsigned prev_score = 0;
 //  for (int i = 0; i < nimages; i++) {
-  unsigned icon_count = 0, level_icon_count = 0;
+  unsigned level_icon_count = 0;
 //  char cH = '0', cT = '0', cU = '0';
   prompt_t live_icon = nothing;
   level_id_t   level = bats;
   sample_t sample;
-//  unsigned live_xcoord, live_ycoord;
+//  std::unordered_map <move_list
+  qte_info qte_tried[level_id_t::witch+1][skeletons_t::size()];
+ 
   unsigned live_icon_offset;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
@@ -656,15 +666,11 @@ int main(int argc, char *argv[])
                                               : "(bonus)";
       const char *lstr = level_id_to_string(level);
       if (live_icon == nothing) {
-        printf("        %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
+        printf("    %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
 //        level_icon_count = 0; // But there's no bonus if you die on a level.
       } else {
-        printf("%3d %2d %8s %5d %5d %s\n", icon_count, level_icon_count,
-                                           ib, score-prev_score, score, lstr);
-       /* if (level_icon_count==1) {
-//          printf("(%d,%d)\n", live_xcoord, live_ycoord);
-          printf("(%d)\n", live_icon_offset);
-        }*/
+        printf("%2d %8s %5d %5d %s\n", level_icon_count,
+                                       ib, score-prev_score, score, lstr);
       }
       live_icon = nothing;        // n.b.
     }
@@ -672,23 +678,21 @@ int main(int argc, char *argv[])
     if (prev_icon == nothing && icon != nothing) {
 //    unsigned closest = find_closest(sample,play_data);
 //    printf("%x %x %x %x %d", sample.n, sample.s, sample.e, sample.w, closest);
-      icon_count++;
-      level_icon_count++;
+//      level_icon_count++;
       // live_icon is reset the last time the score was increased
       if (live_icon != nothing) {
-        printf("There's been a murder!");
-        level_icon_count = 1;
+        // printf("There's been a murder!\n");
+        level_icon_count = 0;
       }
       if (level_completed(level,level_icon_count)) {
-        level_icon_count = 1;  // then level has been successfully completed
+        level_icon_count = 0;  // then level has been successfully completed
       }
-      if (level_icon_count==1) {
+      if (level_icon_count==0) {
         level = level_from_icon_offset(icon_offset);
       }
-      live_icon   = icon;
-//      live_xcoord = xcoord;
-//      live_ycoord = ycoord;
+      live_icon        = icon;
       live_icon_offset = icon_offset;
+      level_icon_count++;
 
       send_key(xdo, target, icon);
     }
@@ -698,7 +702,7 @@ int main(int argc, char *argv[])
     if (score != prev_score) {
       char filename_in[64];// = "images/playthrough/img???_00000.png";
       sprintf(filename_in,
-        "%s_%03d_%06d.png", "images/playthrough/img", icon_count, score);
+        "%s_%03d_%06d.png", "images/playthrough/img", level_icon_count, score);
 
       printf("%s\n", filename_in);
       imlib_context_set_image(img);
@@ -711,8 +715,7 @@ int main(int argc, char *argv[])
     prev_score = score;
     prev_icon  = icon;
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
-//  } while (1);
-  } while (icon_count <= 156); // 156 challenge icons in the game
+  } while (1);
 
   xdo_free(xdo);
   return 0;
