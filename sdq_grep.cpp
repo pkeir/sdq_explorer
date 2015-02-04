@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 #include <list>
 #include <cstring>     // memset
 #include <chrono>
@@ -286,6 +287,18 @@ inline const char *prompt_to_string(const prompt_t icon) {
     case X:       return "button";
   };
   return "error in prompt_to_string";
+}
+
+inline char prompt_to_char(const prompt_t icon) {
+  switch (icon) {
+    case nothing: return '_';
+    case L:       return 'L';
+    case R:       return 'R';
+    case U:       return 'U';
+    case D:       return 'D';
+    case X:       return 'X';
+  };
+  return '0';
 }
 
 inline const char *level_id_to_string(const level_id_t level) {
@@ -666,13 +679,14 @@ int main(int argc, char *argv[])
                                               : "(bonus)";
       const char *lstr = level_id_to_string(level);
       if (live_icon == nothing) {
-        printf("    %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
+        printf("\n    %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
 //        level_icon_count = 0; // But there's no bonus if you die on a level.
       } else {
-        printf("%2d %8s %5d %5d %s\n", level_icon_count,
-                                       ib, score-prev_score, score, lstr);
+        printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
+                                         ib, score-prev_score, score, lstr);
       }
       live_icon = nothing;        // n.b.
+      // qte_tried[level][level_icon_count].normal_bonus
     }
 #endif
     if (prev_icon == nothing && icon != nothing) {
@@ -690,6 +704,15 @@ int main(int argc, char *argv[])
       if (level_icon_count==0) {
         level = level_from_icon_offset(icon_offset);
       }
+      unsigned &attempts = qte_tried[level][level_icon_count].attempts;
+      if (attempts < 4) {
+        prompt_t p = static_cast<prompt_t>(prompt_t::L + attempts);
+        if (p==icon)
+          p=static_cast<prompt_t>(p+1);
+        icon = p;
+        printf("%c", prompt_to_char(icon));
+        attempts++;
+      } 
       live_icon        = icon;
       live_icon_offset = icon_offset;
       level_icon_count++;
