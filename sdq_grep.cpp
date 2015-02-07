@@ -656,6 +656,7 @@ int main(int argc, char *argv[])
   qte_info qte_tried[level_id_t::witch+1][skeletons_t::size()];
  
   unsigned live_icon_offset;
+  bool ignoring_icon = false;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -678,13 +679,24 @@ int main(int argc, char *argv[])
       const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
                                               : "(bonus)";
       const char *lstr = level_id_to_string(level);
-      if (live_icon == nothing) {
+      unsigned bonus = score-prev_score;
+      if (ignoring_icon) {
+        if (live_icon != nothing) {
+          printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
+                                           ib, bonus, score, lstr);
+          qte_tried[level][level_icon_count].bonuses.push_front(bonus);
+          qte_tried[level][level_icon_count].moves.push_front(live_icon);
+        }
+      } else {
+        qte_tried[level][level_icon_count].normal_bonus=bonus;
+      }
+      /*if (live_icon == nothing) {
         printf("\n    %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
 //        level_icon_count = 0; // But there's no bonus if you die on a level.
       } else {
         printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
                                          ib, score-prev_score, score, lstr);
-      }
+      }*/
       live_icon = nothing;        // n.b.
       // qte_tried[level][level_icon_count].normal_bonus
     }
@@ -705,14 +717,20 @@ int main(int argc, char *argv[])
         level = level_from_icon_offset(icon_offset);
       }
       unsigned &attempts = qte_tried[level][level_icon_count].attempts;
-      if (attempts < 4) {
+      ignoring_icon    = false;
+      if (attempts < 5) {
         prompt_t p = static_cast<prompt_t>(prompt_t::L + attempts);
-        if (p==icon)
-          p=static_cast<prompt_t>(p+1);
+        if (p==icon) {
+          p=static_cast<prompt_t>((icon==prompt_t::X)?prompt_t::L:p+1);
+          attempts++;
+          ignoring_icon = false; //    Do move as indicated by on-screen prompt
+        } else {
+          ignoring_icon = true;  // Don't move as indicated by on-screen prompt
+        }
         icon = p;
-        printf("%c", prompt_to_char(icon));
         attempts++;
-      } 
+      }
+      printf("%c", prompt_to_char(icon));
       live_icon        = icon;
       live_icon_offset = icon_offset;
       level_icon_count++;
