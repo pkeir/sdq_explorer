@@ -26,24 +26,8 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include "score_digits.hpp"
 
 //#define SCREENSHOT  
-//#define MORE_DEBUG
-//#define SAVE_SCANLINES // Can be used with MORE_DEBUG
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
-
-struct sample_t {
-  DATA32 n,s,e,w;
-};
-
-inline bool cmp(unsigned tol, unsigned x, unsigned y) {
-  return (x>=y) ? (x-y) <= tol : (y-x) <= tol;
-}
-
-template <typename ...Ts>
-inline bool cmp(unsigned tol, unsigned x, unsigned y,
-                unsigned x2,  unsigned y2, Ts ...ts) {
-  return cmp(tol,x,y) && cmp(tol,x2,y2,ts...);
-}
 
 inline unsigned sdq_dist (unsigned x, unsigned y) { return x>y ? x-y : y-x; }
 inline float    sdq_distf(unsigned x, unsigned y) {
@@ -197,10 +181,6 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
         match [i] += sdq_distn(rr, score_digits::digits[i][h][2]);
 //        match2[i] += sdq_distn(ws, score_digits::digits[i][h][1]);
 //        match2[i] += sdq_distn(rs, score_digits::digits[i][h][3]);
-#ifdef MORE_DEBUG
-        printf("(%.3f)|", match[i]);
-//        printf("[%.3f]|", match2[i]);
-#endif
       }
 
 /*      match [i] += sdq_distn(r0, score_digits::digits[i][0][0]);
@@ -215,50 +195,9 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
         best       = i;
         best_match = match[i];
       }
-#ifdef MORE_DEBUG
-      printf("%.3f %.3f %.3f\n", match[i], match2[i], best_match);
-#endif
     }
 
     digits[digit] = best;
-#ifdef MORE_DEBUG
-    printf("[%u][%f]\n", best, best_match);
-#endif
-
-#ifdef  MORE_DEBUG
-//    printf("[%2d,%2d] : ", r0, sn0);
-//    printf("[%2d,%2d] : ", r1, sn1);
-//    printf("[%2d,%2d] : ", r2, sn2);
-      for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
-        unsigned wr = scan[digit][h][0];
-        unsigned ws = scan[digit][h][1] - xorigin;
-        printf("[%2u,%2u] : ", wr, ws);
-      }
-    printf("\n");
-#endif
-
-    /*const int tol = 3;
-    if        (cmp(tol,r0,18,sn0,11,r1,12,sn1, 6,r2,18,sn2,11)) {
-      digits[digit] = 0;
-    } else if (cmp(tol,r0, 6,sn0,18,r1, 6,sn1,18,r2, 6,sn2,18)) {
-      digits[digit] = 1;
-    } else if (cmp(tol,r0,18,sn0,11,r1, 8,sn1,21,r2,28,sn2, 6)) {
-      digits[digit] = 2;
-    } else if (cmp(tol,r0,17,sn0,11,r1, 9,sn1,18,r2,18,sn2,11)) {
-      digits[digit] = 3;
-    } else if (cmp(tol,r0, 8,sn0,21,r1,14,sn1, 9,r2, 6,sn2,23)) {
-      digits[digit] = 4;
-    } else if (cmp(tol,r0,28,sn0, 6,r1,15,sn1, 6,r2,18,sn2,11)) {
-      digits[digit] = 5;
-    } else if (cmp(tol,r0,17,sn0,11,r1,22,sn1, 6,r2,18,sn2,11)) {
-      digits[digit] = 6;
-    } else if (cmp(tol,r0,28,sn0, 6,r1, 6,sn1,23,r2, 6,sn2,16)) {
-      digits[digit] = 7;
-    } else if (cmp(tol,r0,18,sn0,11,r1,18,sn1,11,r2,18,sn2,11)) {
-      digits[digit] = 8;
-    } else if (cmp(tol,r0,17,sn0,11,r1,25,sn1, 8,r2,18,sn2,10)) {
-      digits[digit] = 9;
-    }*/
 
     xorigin += 40;
   }
@@ -330,22 +269,16 @@ inline const char *level_id_to_string(const level_id_t level) {
   return "error in level_id_to_string";
 }
 
-prompt_t find_prompt(DATA32 *data, int width, int height, unsigned &score,
-                     sample_t &sample, unsigned &icon_offset)
+prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
+                     unsigned &icon_offset)
 {
-//  const DATA32 arrow_red    = -65536;    // ffff0000  // ARGB
-//  const DATA32 arrow_blue   = -16711704; // ff00ffe8
-//  const DATA32 button_green = -16711936; // ff00ff00
-//  const DATA32 score_white  = 0xffffffea; // grabc can identify pixel colours
-//  const DATA32 score_red    = 0xffff0000; // ""
-  const DATA32 arrow_red    = 0xfffd0100; // via grabc
+  const DATA32 arrow_red    = 0xfffd0100; // ARGB - via grabc
   const DATA32 arrow_blue   = 0xff00ffd8;
   const DATA32 button_green = 0xff00fe00;
   const DATA32 score_white  = 0xfffcffd9;
   const DATA32 score_red    = 0xfffd0100; // same as arrow_red
 
   static prompt_t last = nothing;
-//  unsigned score     = 0;
   unsigned red_run   = 0,   red_start, red_i;
   unsigned blue_run  = 0,  blue_start, blue_i;
   unsigned green_run = 0, green_start, green_i;
@@ -353,10 +286,6 @@ prompt_t find_prompt(DATA32 *data, int width, int height, unsigned &score,
   ua63_t white_run{}, white_start{}, zero{};
   unsigned white[6][score_digits::num_hsamples][score_digits::num_fields]{};
   bool     arrow_tail_up_or_down = false;
-//  sample.n = data[(  height/4)*width+(width/2)];
-//  sample.s = data[(3*height/4)*width+(width/2)];
-//  sample.e = data[(  height/2)*width+(width/4)];
-//  sample.w = data[(  height/2)*width-(width/4)];
 
   for (int i = 0; i < height; i++) {
     int count = 0;
@@ -510,64 +439,7 @@ prompt_t find_prompt(DATA32 *data, int width, int height, unsigned &score,
   return nothing;
 }
 
-struct icon_data_t {
-  unsigned reward;
-  prompt_t   icon;
-  sample_t sample;
-};
-
-template <std::size_t N>
-void load_sdq_play_data(std::array<icon_data_t,N> &play_data)
-{
-  std::ifstream file("game_data.txt");
-  if (!file) printf("error: game_data.txt not found.\n");
-
-  unsigned i = 0;
-  std::string line;
-  while (std::getline(file, line))
-  {
-    if (line.compare(6,5,"bonus")==0) { continue; } // skip this line
-
-    std::istringstream iss(line);
-    unsigned    _, reward;
-    std::string str;
-    sample_t    s;
-    if (iss >> _ >> str >> reward >> _ >> std::hex >> s.n >> s.s >> s.e >> s.w)
-    {
-      play_data[i].reward = reward;
-      play_data[i].sample = s;
-      switch (str[0]) {
-        case 'u' : play_data[i].icon = prompt_t::U; break;
-        case 'd' : play_data[i].icon = prompt_t::D; break;
-        case 'l' : play_data[i].icon = prompt_t::L; break;
-        case 'r' : play_data[i].icon = prompt_t::R; break;
-        case 'b' : play_data[i].icon = prompt_t::X; break;
-      };
-      i++;
-    }
-  }
-}
-
-template <std::size_t N>
-unsigned find_closest(const sample_t sample,
-                      const std::array<icon_data_t,N> &play_data) {
-  unsigned result = 0;
-  DATA32 min = UINT_MAX;
-  DATA32 n1  = sample.n; DATA32 s1 = sample.s;
-  DATA32 e1  = sample.e; DATA32 w1 = sample.w;
-  for (unsigned i = 0; i < N; i++) {
-    DATA32 n2 = play_data[i].sample.n; DATA32 s2 = play_data[i].sample.s;
-    DATA32 e2 = play_data[i].sample.e; DATA32 w2 = play_data[i].sample.w;
-    DATA32 sos = rgb_dist_sqr(n1, n2) + rgb_dist_sqr(s1, s2)
-               + rgb_dist_sqr(e1, e2) + rgb_dist_sqr(w1, w2);
-    if (sos < min) {
-      min    = sos;
-      result = i;
-    }
-  }
-  return result;
-}
-
+// Pertinent data relating to a single Quick Time Event (QTE)
 struct qte_info {
   std::list<unsigned> bonuses;
   std::list<prompt_t> moves;
@@ -582,12 +454,7 @@ int main(int argc, char *argv[])
   Window      target  = 0;
   int         x, y, w, h;
   const char daphne[] =
-#ifdef  MORE_DEBUG
-    "ImageMagick";
-#else
     "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
-#endif
-//    "DAPHNE: Now";
   setbuf(stdout,NULL);    // Flush ok; else use fprintf(stderr,"hello");
 
   xdo_t *xdo = xdo_new(NULL);
@@ -595,68 +462,16 @@ int main(int argc, char *argv[])
   target = find_window(xdo, daphne);
   get_coords(target,x,y,w,h);          // x, y, w and h are returned
 
-#ifdef MORE_DEBUG 
-  Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1);
-  imlib_context_set_image(img);
-  DATA32 *data = imlib_image_get_data();
-  unsigned score;
-  sample_t sample;
-  // unsigned xcoord, ycoord;
-  unsigned icon_offset;
-  prompt_t icon = find_prompt(data,w,h,score,sample,icon_offset); 
-
-  // Draw vertical/horizontal lines between the score digits
-
-#ifdef SAVE_SCANLINES
-  for (unsigned x = 0; x < h; x++) {
-  for (unsigned y = 0; y < w; y++) {
-    DATA32 &curr = data[x*w+y  ];
-/*    if (220 == y) { curr = 0; }
-    if (180 == y) { curr = 0; }
-    if (140 == y) { curr = 0; }
-    if (100 == y) { curr = 0; }
-    if ( 60 == y) { curr = 0; }
-    if ( 20 == y) { curr = 0; }
-*/
-//    if ( 68==x) { curr=0; }
-//    if ( 86==x) { curr=0; }
-//    if (107==x) { curr=0; }
-    for (unsigned const hsample : score_digits::hsamples) {
-      if (x==hsample) { curr=0; }
-    }
-  }
-  }
-  imlib_image_set_format("png");
-  imlib_save_image("scorelines2.png");
-#endif // SAVE_SCANLINES
-
-  xdo_free(xdo);
-  return 0;
-#endif // MORE_DEBUG
-
-  std::array<icon_data_t,156> play_data;
-  load_sdq_play_data(play_data);
-
-/*
-  // To start a game press "1"
-  xdo_send_keysequence_window_down(xdo, target, "1", 0);
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  xdo_send_keysequence_window_up  (xdo, target, "1", 0);
-*/
-
   prompt_t prev_icon = nothing;
   unsigned prev_score = 0;
-//  for (int i = 0; i < nimages; i++) {
   unsigned level_icon_count = 0;
-//  char cH = '0', cT = '0', cU = '0';
   prompt_t live_icon = nothing;
   level_id_t   level = bats;
-  sample_t sample;
-//  std::unordered_map <move_list
   qte_info qte_tried[level_id_t::witch+1][skeletons_t::size()];
  
   unsigned live_icon_offset;
   bool ignoring_icon = false;
+  bool running = true;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
     // imlib_context_set_image(img_arr[i]);
@@ -666,14 +481,14 @@ int main(int argc, char *argv[])
     //See $HOME/apps/imlib2-1.4.4/src/lib/api.c
 //    DATA32 *data = img_arr[i]->data;
     //DATA32 const *data = imlib_image_get_data_for_reading_only();
-    DATA32 *data = imlib_image_get_data();
+    DATA32 const *data = imlib_image_get_data_for_reading_only();
     //printf("w:%d h:%d\n", w,h);
     //printf("%p\n", data);
     // 640x480
     unsigned score;
     // unsigned xcoord, ycoord; 
     unsigned icon_offset;
-    prompt_t icon = find_prompt(data,w,h,score,sample,icon_offset); 
+    prompt_t icon = find_prompt(data,w,h,score,icon_offset); 
 #ifndef SCREENSHOT
     if (score != prev_score) {
       const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
@@ -702,9 +517,6 @@ int main(int argc, char *argv[])
     }
 #endif
     if (prev_icon == nothing && icon != nothing) {
-//    unsigned closest = find_closest(sample,play_data);
-//    printf("%x %x %x %x %d", sample.n, sample.s, sample.e, sample.w, closest);
-//      level_icon_count++;
       // live_icon is reset the last time the score was increased
       if (live_icon != nothing) {
         // printf("There's been a murder!\n");
@@ -755,8 +567,36 @@ int main(int argc, char *argv[])
     imlib_free_image();
     prev_score = score;
     prev_icon  = icon;
+    if (level == witch && level_icon_count == 11) {
+      printf("game completed.\n");
+      bool attempt_missing = false;
+      unsigned attempts = 0, attempt_level = 0, attempt_icon = 0;
+      for (unsigned i = 0; i < level_id_t::witch+1; i++) {
+        for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
+          if (qte_tried[i][j].attempts<5) {
+            attempt_missing = true;
+            attempts = qte_tried[i][j].attempts;
+            attempt_level = i;
+            attempt_icon  = j;
+          }
+        }
+      }
+      if (attempt_missing) {
+        printf("Only %d attempts on level %d, icon %d.\n",
+                attempts, attempt_level, attempt_icon);
+        printf("Starting again in 5 minutes...\n");
+        std::this_thread::sleep_for(std::chrono::minutes(5));
+        printf("Starting now.\n");
+        xdo_send_keysequence_window_down(xdo, target, "1", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        xdo_send_keysequence_window_up  (xdo, target, "1", 0);
+      } else {
+        printf("all done.\n");
+        running = false;
+      }
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
-  } while (1);
+  } while (running);
 
   xdo_free(xdo);
   return 0;
