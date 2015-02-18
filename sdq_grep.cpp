@@ -265,8 +265,8 @@ inline const char *level_id_to_string(const level_id_t level) {
     case winged_goblins : return "winged_goblins";
     case laser_eyes     : return "laser_eyes";
     case witch          : return "witch";
+    default             : return "error in level_id_to_string";
   };
-  return "error in level_id_to_string";
 }
 
 prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
@@ -462,12 +462,37 @@ int main(int argc, char *argv[])
   target = find_window(xdo, daphne);
   get_coords(target,x,y,w,h);          // x, y, w and h are returned
 
+  std::vector<prompt_t> moves[level_id_t::num_levels];
+  moves[ bats ]           = {R,R,R,L,X,X,X};
+  moves[ totem ]          = {L,R,L,R,D,U};
+  moves[ fire_woman ]     = {R,L,U,X,U,X};
+  moves[ pyramid_steps ]  = {X,X,X,R,X,X,R,X};
+  moves[ water_lift ]     = {L};
+  moves[ serpents ]       = {X,X,X,R,L,X,X,D};
+  moves[ mummy ]          = {R,U,X,R,X};
+  moves[ gulley ]         = {D,L,R,L,L,L};
+  moves[ skeletons ]      = {R,X,X,X,X,R,X,X,X,X,X,X,X,R,X,X};
+  moves[ hands ]          = {R,U,X,L,X,X,L,X,X,X,X};
+  moves[ snake ]          = {L,U,U,L,U,L,R};
+  moves[ dragon ]         = {R,L,D,R,U,L,L,L,U,R,X};
+  moves[ jellyfish ]      = {X,X,X,X,X,X,X,X,U,X};
+  moves[ river_jump ]     = {D,U,R,D,R,U};
+  moves[ river_logs ]     = {R,L,R,L,L,U,D,L,R,U};
+  moves[ river_raft ]     = {R,R,U,R,L,L,D,R};
+  moves[ windmill ]       = {L,U,X,R,U};
+  moves[ chariots ]       = {U,U,U,U,U,U};
+  moves[ stair_chute ]    = {L};
+  moves[ closing_walls ]  = {L};
+  moves[ winged_goblins ] = {X,X};
+  moves[ laser_eyes ]     = {L,R,U,L};
+  moves[ witch ]          = {R,X,L,U,R,L,X,X,R,L,X};
+
   prompt_t prev_icon = nothing;
   unsigned prev_score = 0;
   unsigned level_icon_count = 0;
   prompt_t live_icon = nothing;
   level_id_t   level = bats;
-  qte_info qte_tried[level_id_t::witch+1][skeletons_t::size()];
+  qte_info qte_tried[level_id_t::num_levels][skeletons_t::size()];
  
   unsigned live_icon_offset;
   bool ignoring_icon = false;
@@ -571,7 +596,7 @@ int main(int argc, char *argv[])
       printf("game completed.\n");
       bool attempt_missing = false;
       unsigned attempts = 0, attempt_level = 0, attempt_icon = 0;
-      for (unsigned i = 0; i < level_id_t::witch+1; i++) {
+      for (unsigned i = 0; i < level_id_t::num_levels; i++) {
         for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
           if (qte_tried[i][j].attempts<5) {
             attempt_missing = true;
