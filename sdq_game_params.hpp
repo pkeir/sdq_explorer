@@ -9,7 +9,7 @@ enum level_id_t { bats, totem, fire_woman, pyramid_steps, water_lift, serpents,
                   mummy, gulley, skeletons, hands, snake, dragon, jellyfish,
                   river_jump, river_logs, river_raft, windmill, chariots,
                   stair_chute, closing_walls, winged_goblins, laser_eyes,
-                  witch };
+                  witch, num_levels };
 
 static_assert(sizeof(level_id_t)==4,"");
 
