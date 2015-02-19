@@ -29,23 +29,14 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 
 // g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
 
-inline unsigned sdq_dist (unsigned x, unsigned y) { return x>y ? x-y : y-x; }
-inline float    sdq_distf(unsigned x, unsigned y) {
-  return x>y ? static_cast<float>(x-y) : static_cast<float>(y-x);
-}
 // normalised distance
 inline float    sdq_distn(unsigned x, unsigned y) {
   return x>y ?                   static_cast<float>(x-y)/x
              : 0==(y-x) ? 0.0f : static_cast<float>(y-x)/y;
 }
 
-template <unsigned X, unsigned Y>
-unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
-{
-}
-
 // offset: how many *pixels* into an image is this icon (no switch on pairs).
-level_id_t level_from_icon_offset(const unsigned icon_offset)
+level_e level_from_icon_offset(const unsigned icon_offset)
 {
   switch (icon_offset) {
     case 138628: return bats;           //(388,216)
@@ -75,122 +66,37 @@ level_id_t level_from_icon_offset(const unsigned icon_offset)
   }
 }
 
-bool level_completed(const level_id_t level,const unsigned level_icon_count) {
-
-  unsigned level_size;
-   
-  switch (level) {
-    case bats           : level_size = level_t<bats>::type::size(); break;
-    case totem          : level_size = level_t<totem>::type::size(); break;
-    case fire_woman     : level_size = level_t<fire_woman>::type::size(); break;
-    case pyramid_steps  : level_size = level_t<pyramid_steps>::type::size(); break;
-    case water_lift     : level_size = level_t<water_lift>::type::size(); break;
-    case serpents       : level_size = level_t<serpents>::type::size(); break;
-    case mummy          : level_size = level_t<mummy>::type::size(); break;
-    case gulley         : level_size = level_t<gulley>::type::size(); break;
-    case skeletons      : level_size = level_t<skeletons>::type::size(); break;
-    case hands          : level_size = level_t<hands>::type::size(); break;
-    case snake          : level_size = level_t<snake>::type::size(); break;
-    case dragon         : level_size = level_t<dragon>::type::size(); break;
-    case jellyfish      : level_size = level_t<jellyfish>::type::size(); break;
-    case river_jump     : level_size = level_t<river_jump>::type::size(); break;
-    case river_logs     : level_size = level_t<river_logs>::type::size(); break;
-    case river_raft     : level_size = level_t<river_raft>::type::size(); break;
-    case windmill       : level_size = level_t<windmill>::type::size(); break;
-    case chariots       : level_size = level_t<chariots>::type::size(); break;
-    case stair_chute    : level_size = level_t<stair_chute>::type::size(); break;
-    case closing_walls  : level_size = level_t<closing_walls>::type::size(); break;
-    case winged_goblins : level_size = level_t<winged_goblins>::type::size(); break;
-    case laser_eyes     : level_size = level_t<laser_eyes>::type::size(); break;
-    case witch          : level_size = level_t<witch>::type::size(); break;
-    default: printf("error: no matching level in level_completed"); break;
-  };
-  return level_size==level_icon_count;
+inline bool level_completed(const level_e level,
+                            const unsigned level_icon_count,
+                            const sdq_moves &move_bank)
+{
+  return move_bank.level_moves[level].size() == level_icon_count;
 }
 
-template <std::size_t X, std::size_t Y>
-inline
-unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
-                    const std::array<std::array<unsigned,Y>,X> &white_start,
-                    const unsigned (&scan)[X][Y][score_digits::num_fields])
+template <std::size_t X>
+inline unsigned calc_score(
+ const unsigned (&scan)[X][score_digits::num_hsamples][score_digits::num_fields]
+)
 {
-  unsigned digits[X]{}, xorigin = 20;
-//[18,11] : [12, 6] : [18,11] :  // 0
-//[18,11] : [12, 6] : [18,11] : 
-//[18,11] : [12, 6] : [18,11] : 
-//[ 6,18] : [ 6,18] : [ 6,18] :  // 1
-//[ 6,18] : [ 6,18] : [ 6,18] : 
-//[18,11] : [ 8,21] : [28, 6] :  // 2 (125)
-//[18,11] : [ 8,21] : [28, 6] : 
-//[18,11] : [ 9,18] : [18,11] :  // 3
-//[18,11] : [ 9,18] : [18,11] : 
-//[16,12] : [ 9,18] : [18,11] :
-//[ 8,21] : [13,10] : [ 6,23] :  // 4 (153)
-//[ 8,21] : [15, 8] : [ 6,23] : 
-//[28, 6] : [15, 6] : [18,11] :  // 5 (127)
-//[28, 6] : [15, 6] : [18,11] :
-//[28, 6] : [18, 5] : [19,10] :  // (After) icon 1 (before icon 2)
-//[18,11] : [23, 6] : [18,11] :  // 6 (143)
-//[16,12] : [22, 6] : [18,11] :
-//[19,10] : [24, 6] : [18,11] : 
-//[18,11] : [24, 5] : [18,11] :
-//[28, 6] : [ 6,23] : [ 6,16] :  // 7 (119)
-//[28, 6] : [ 6,23] : [ 6,16] :
-//[18,11] : [18,11] : [18,11] :  // 8 (72)
-//[18,11] : [18,11] : [18,11] : 
-//[18,11] : [26, 8] : [19,10] :  // 9 (25)
-//[17,12] : [25, 8] : [18,11] : 
+  unsigned digits[X], xorigin = 20;
 
   for (unsigned digit = 0; digit < X; digit++) {
-/*    unsigned r0  = white_run  [digit][0];
-    unsigned s0  = white_start[digit][0];
-    unsigned sn0 = s0 - xorigin;
-    unsigned r1  = white_run  [digit][1];
-    unsigned s1  = white_start[digit][1];
-    unsigned sn1 = s1 - xorigin;
-    unsigned r2  = white_run  [digit][2];
-    unsigned s2  = white_start[digit][2];
-    unsigned sn2 = s2 - xorigin;
-*/
-/*    unsigned r0  = scan[digit][0][0];
-    unsigned s0  = scan[digit][0][1];
-    unsigned sn0 = s0 - xorigin;
-    unsigned r1  = scan[digit][1][0];
-    unsigned s1  = scan[digit][1][1];
-    unsigned sn1 = s1 - xorigin;
-    unsigned r2  = scan[digit][2][0];
-    unsigned s2  = scan[digit][2][1];
-    unsigned sn2 = s2 - xorigin;
-*/
-// unsigned match_digit(const unsigned (&a)[X][Y], const unsigned (&b)[X][Y])
-    const float poor_match = 4.44f;
-    float match[10]{}, best_match{poor_match};    // 0 is a perfect match
-    float match2[10]{}, best_match2{poor_match};    // 0 is a perfect match
-    unsigned best{};
 
-    for (unsigned i = 0; i < 10; i++) {
-//      printf("%d-%d (%d %d) %f\n",
-//        digit, i, r0, score_digits[i][0][0],
-//        sdq_distn(r0,score_digits[i][0][0]));
+    const float poor_match = 4.44f; // Low scores, like 0, still rank 6 digits
+    float match[score_digits::num_digits]{};
+    float best_match = poor_match;  // 0 is a perfect match
+    unsigned best = 0;
+
+    for (unsigned i = 0; i < score_digits::num_digits; i++) {
       for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
-        unsigned wr = scan[digit][h][0];
-        unsigned ws = scan[digit][h][1] - xorigin;
-        unsigned rr = scan[digit][h][2];
-        unsigned rs = scan[digit][h][3] - xorigin;
-        match [i] += sdq_distn(wr, score_digits::digits[i][h][0]);
-        match [i] += sdq_distn(rr, score_digits::digits[i][h][2]);
-//        match2[i] += sdq_distn(ws, score_digits::digits[i][h][1]);
-//        match2[i] += sdq_distn(rs, score_digits::digits[i][h][3]);
+        unsigned white_run   = scan[digit][h][0];
+        unsigned white_start = scan[digit][h][1] - xorigin; // unneeded
+        unsigned red_run     = scan[digit][h][2];
+        unsigned red_start   = scan[digit][h][3] - xorigin; // ""
+        match [i] += sdq_distn(white_run, score_digits::digits[i][h][0]);
+        match [i] += sdq_distn(red_run,   score_digits::digits[i][h][2]);
       }
 
-/*      match [i] += sdq_distn(r0, score_digits::digits[i][0][0]);
-      match [i] += sdq_distn(r1, score_digits::digits[i][1][0]);
-      match [i] += sdq_distn(r2, score_digits::digits[i][2][0]);
-      match2[i] += sdq_distn(sn0,score_digits::digits[i][0][1]);
-      match2[i] += sdq_distn(sn1,score_digits::digits[i][1][1]);
-      match2[i] += sdq_distn(sn2,score_digits::digits[i][2][1]);
-*/
-//      match[i]+=match2[i];
       if (match[i]<best_match) {
         best       = i;
         best_match = match[i];
@@ -198,25 +104,20 @@ unsigned calc_score(const std::array<std::array<unsigned,Y>,X> &white_run,
     }
 
     digits[digit] = best;
-
     xorigin += 40;
   }
-//  for (auto d : digits) { printf("%d", d); }
-//  printf("\n");
-  unsigned score{};
+
+  unsigned score = 0;
   score += 100000 * digits[0];
   score += 10000  * digits[1];
   score += 1000   * digits[2];
   score += 100    * digits[3];
   score += 10     * digits[4];
   score += 1      * digits[5];
-#ifdef MORE_DEBUG
-  printf("score: %d\n", score);
-#endif // MORE_DEBUG
   return score;
 }
 
-inline const char *prompt_to_string(const prompt_t icon) {
+inline const char *prompt_to_string(const prompt_e icon) {
   switch (icon) {
     case nothing: return "nothing";
     case L:       return "left";
@@ -228,7 +129,7 @@ inline const char *prompt_to_string(const prompt_t icon) {
   return "error in prompt_to_string";
 }
 
-inline char prompt_to_char(const prompt_t icon) {
+inline char prompt_to_char(const prompt_e icon) {
   switch (icon) {
     case nothing: return '_';
     case L:       return 'L';
@@ -240,7 +141,7 @@ inline char prompt_to_char(const prompt_t icon) {
   return '0';
 }
 
-inline const char *level_id_to_string(const level_id_t level) {
+inline const char *level_to_string(const level_e level) {
   switch (level) {
     case bats           : return "bats";
     case totem          : return "totem";
@@ -265,11 +166,11 @@ inline const char *level_id_to_string(const level_id_t level) {
     case winged_goblins : return "winged_goblins";
     case laser_eyes     : return "laser_eyes";
     case witch          : return "witch";
-    default             : return "error in level_id_to_string";
+    default             : return "error in level_to_string";
   };
 }
 
-prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
+prompt_e find_prompt(const DATA32 *data, int width, int height, unsigned &score,
                      unsigned &icon_offset)
 {
   const DATA32 arrow_red    = 0xfffd0100; // ARGB - via grabc
@@ -278,17 +179,14 @@ prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
   const DATA32 score_white  = 0xfffcffd9;
   const DATA32 score_red    = 0xfffd0100; // same as arrow_red
 
-  static prompt_t last = nothing;
+  static prompt_e last = nothing;
   unsigned red_run   = 0,   red_start, red_i;
   unsigned blue_run  = 0,  blue_start, blue_i;
   unsigned green_run = 0, green_start, green_i;
-  using ua63_t = std::array<std::array<unsigned,score_digits::num_hsamples>,6>; // std::array allows: white_run = zero; (now unneeded?)
-  ua63_t white_run{}, white_start{}, zero{};
-  unsigned white[6][score_digits::num_hsamples][score_digits::num_fields]{};
+  unsigned scan[6][score_digits::num_hsamples][score_digits::num_fields]{};
   bool     arrow_tail_up_or_down = false;
 
   for (int i = 0; i < height; i++) {
-    int count = 0;
     for (int j = 1; j < width; j++) {
 
       DATA32 curr = data[i*width+j  ];
@@ -309,14 +207,12 @@ prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
       else if (rgb_dist_lte(curr,score_white,1)) {
         if (j >= 20 && j < (20+6*40)) {
           int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
-          // data[i*width+j] = 0;
-          //for (unsigned const hsample : score_digits::hsamples) {
           for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
             if (i==score_digits::hsamples[h]) {
-              unsigned &wr = white[vslice][h][0];
-              unsigned &ws = white[vslice][h][1];
-              if (0 == wr) { ws = j; }
-              wr++;
+              unsigned &white_run   = scan[vslice][h][0];
+              unsigned &white_start = scan[vslice][h][1];
+              if (0 == white_run) { white_start = j; }
+              white_run++;
             }
           }
         }   // if (j >= 20 || j < (20+5*40))
@@ -325,14 +221,12 @@ prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
       if (rgb_dist_lte(curr,score_red,1)) {
         if (j >= 20 && j < (20+6*40)) {
           int vslice  = (j-20)/40 > 5 ? 5 : (j-20)/40; // 0-5
-          // data[i*width+j] = 0;
-          //for (unsigned const hsample : score_digits::hsamples) {
           for (unsigned h = 0; h < score_digits::num_hsamples; h++) {
             if (i==score_digits::hsamples[h]) {
-              unsigned &rr = white[vslice][h][2];
-              unsigned &rs = white[vslice][h][3];
-              if (0 == rr) { rs = j; }
-              rr++;
+              unsigned &red_run   = scan[vslice][h][2];
+              unsigned &red_start = scan[vslice][h][3];
+              if (0 == red_run) { red_start = j; }
+              red_run++;
             }
           }
         }   // if (j >= 20 || j < (20+5*40))
@@ -340,99 +234,41 @@ prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
     }
 
     if (112==i) // At this point the score has been scanned
-      score = calc_score(white_run,white_start,white);
-//      score = calc_score(white_run,white_start);
+      score = calc_score(scan);
 
-//    if ((red_run > 2)&&(blue_run>20))
-//      printf("r %d %d\n", red_run, blue_run);
-//    if ((red_run > 3)&&(blue_run>80))
-//      printf("r %d %d\n", red_run, blue_run);
-    // Was red_run==4 but now red_run==5; red_run>3 handles both
     if ((red_run>3)&&(blue_run>80)) // left or right
     {
-//      if      (red_start==blue_start-(red_run+1))
       if      (red_start==blue_start-red_run)
-{
-//        if (last != right)
-//          printf("%3d %3d ", red_start, i);
-//        last = right;
-        // xcoord = blue_start; ycoord = blue_i;
+      {
         icon_offset = (blue_i*width)+blue_start;
-        return prompt_t::R;
-}
-//      else if (blue_start==red_start-(blue_run+1))
+        return prompt_e::R;
+      }
       else if (blue_start==red_start-blue_run)
-{
-//        if (last != left)
-//          printf("%3d %3d ", blue_start, i);
-//        last = left;
-        // xcoord = blue_start; ycoord = blue_i;
+      {
         icon_offset = (blue_i*width)+blue_start;
-        return prompt_t::L;
-}
+        return prompt_e::L;
+      }
     }
     if (red_run>30)
       arrow_tail_up_or_down = true;
-//    if ((red_run==1)&&(blue_run==31))
     if ((red_run==3)&&(blue_run==32))
     {
       if (arrow_tail_up_or_down)
-{
-//        if (last!=down)
-//          printf("%3d %3d ", red_start, i);
-//        last = down;
-        // xcoord = blue_start; ycoord = blue_i;
+      {
         icon_offset = (blue_i*width)+blue_start;
-        return prompt_t::D;
-}
+        return prompt_e::D;
+      }
       else
-{
-//        if (last != up)
-//          printf("%3d %3d ", red_start, i);
-//        last = up;
-        // xcoord = blue_start; ycoord = blue_i;
+      {
         icon_offset = (blue_i*width)+blue_start;
-        return prompt_t::U;
-}
+        return prompt_e::U;
+      }
     }
     if (green_run > 40)
-{
-//      if (last != button)
-//        printf("%3d %3d ", green_start, i);
-//      last = button;
-      // xcoord = green_start; ycoord = green_i;
+    {
       icon_offset = (green_i*width)+green_start;
-      return prompt_t::X;
-}
-/*    if (white_run[0][0] > 0) {
-      printf("[%d,%2d,%d] (%5s) : ", i, white_run[0][0], white_start[0][0], "white");
-//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
-      white_run = zero;
-      printf("\n");
+      return prompt_e::X;
     }
-*/
-
-// #define DEBUG_ARROWS
-#ifdef DEBUG_ARROWS
-    if (red_run > 0)  {
-      printf("[%d,%2d,%d] (%5s) : ", i, red_run, red_start, "red");
-//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
-      red_run=0;
-      if (blue_run == 0) printf("\n");
-    }
-    if (blue_run > 0)  {
-      printf("[%d,%2d,%d] (%5s) : ", i, blue_run, blue_start, "blue");
-//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
-      blue_run=0;
-      printf("\n");
-    }
-    if (green_run > 0) {
-      printf("[%d,%2d,%d] (%5s) : ", i, green_run, green_start, "green");
-//          for (int i = 0; i < 4; i++) data[i*width+j-i] = 0;
-      green_run = 0;
-      printf("\n");
-    }
-#endif
   }
 
   last = nothing;
@@ -442,7 +278,7 @@ prompt_t find_prompt(const DATA32 *data, int width, int height, unsigned &score,
 // Pertinent data relating to a single Quick Time Event (QTE)
 struct qte_info {
   std::list<unsigned> bonuses;
-  std::list<prompt_t> moves;
+  std::list<prompt_e> moves;
   unsigned normal_bonus = 0;
   unsigned attempts     = 0;
 };
@@ -462,37 +298,19 @@ int main(int argc, char *argv[])
   target = find_window(xdo, daphne);
   get_coords(target,x,y,w,h);          // x, y, w and h are returned
 
-  std::vector<prompt_t> moves[level_id_t::num_levels];
-  moves[ bats ]           = {R,R,R,L,X,X,X};
-  moves[ totem ]          = {L,R,L,R,D,U};
-  moves[ fire_woman ]     = {R,L,U,X,U,X};
-  moves[ pyramid_steps ]  = {X,X,X,R,X,X,R,X};
-  moves[ water_lift ]     = {L};
-  moves[ serpents ]       = {X,X,X,R,L,X,X,D};
-  moves[ mummy ]          = {R,U,X,R,X};
-  moves[ gulley ]         = {D,L,R,L,L,L};
-  moves[ skeletons ]      = {R,X,X,X,X,R,X,X,X,X,X,X,X,R,X,X};
-  moves[ hands ]          = {R,U,X,L,X,X,L,X,X,X,X};
-  moves[ snake ]          = {L,U,U,L,U,L,R};
-  moves[ dragon ]         = {R,L,D,R,U,L,L,L,U,R,X};
-  moves[ jellyfish ]      = {X,X,X,X,X,X,X,X,U,X};
-  moves[ river_jump ]     = {D,U,R,D,R,U};
-  moves[ river_logs ]     = {R,L,R,L,L,U,D,L,R,U};
-  moves[ river_raft ]     = {R,R,U,R,L,L,D,R};
-  moves[ windmill ]       = {L,U,X,R,U};
-  moves[ chariots ]       = {U,U,U,U,U,U};
-  moves[ stair_chute ]    = {L};
-  moves[ closing_walls ]  = {L};
-  moves[ winged_goblins ] = {X,X};
-  moves[ laser_eyes ]     = {L,R,U,L};
-  moves[ witch ]          = {R,X,L,U,R,L,X,X,R,L,X};
+  const sdq_moves move_bank; // The full, conventional icon sequence for SDQ.
 
-  prompt_t prev_icon = nothing;
+  prompt_e prev_icon = nothing;
   unsigned prev_score = 0;
   unsigned level_icon_count = 0;
-  prompt_t live_icon = nothing;
-  level_id_t   level = bats;
-  qte_info qte_tried[level_id_t::num_levels][skeletons_t::size()];
+  prompt_e live_icon = nothing;
+  level_e   level = bats;
+//  qte_info qte_tried[level_e::num_levels][skeletons_t::size()];
+  std::vector<qte_info> qte_tried[level_e::num_levels];
+
+  for (unsigned int v = 0; v < level_e::num_levels; v++) {
+    qte_tried[v].resize(move_bank.level_moves[v].size());
+  }
  
   unsigned live_icon_offset;
   bool ignoring_icon = false;
@@ -513,13 +331,18 @@ int main(int argc, char *argv[])
     unsigned score;
     // unsigned xcoord, ycoord; 
     unsigned icon_offset;
-    prompt_t icon = find_prompt(data,w,h,score,icon_offset); 
+    prompt_e icon = find_prompt(data,w,h,score,icon_offset); 
 #ifndef SCREENSHOT
     if (score != prev_score) {
       const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
                                               : "(bonus)";
-      const char *lstr = level_id_to_string(level);
+      const char *lstr = level_to_string(level);
       unsigned bonus = score-prev_score;
+      /*if (live_icon != nothing)// && ignoring_icon)
+        printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
+                                         ib, bonus, score, lstr);
+      */
+
       if (ignoring_icon) {
         if (live_icon != nothing) {
           printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
@@ -547,18 +370,20 @@ int main(int argc, char *argv[])
         // printf("There's been a murder!\n");
         level_icon_count = 0;
       }
-      if (level_completed(level,level_icon_count)) {
+      if (level_completed(level,level_icon_count,move_bank)) {
         level_icon_count = 0;  // then level has been successfully completed
       }
       if (level_icon_count==0) {
         level = level_from_icon_offset(icon_offset);
       }
+// begin exhaustive section
+
       unsigned &attempts = qte_tried[level][level_icon_count].attempts;
       ignoring_icon    = false;
       if (attempts < 5) {
-        prompt_t p = static_cast<prompt_t>(prompt_t::L + attempts);
+        prompt_e p = static_cast<prompt_e>(prompt_e::L + attempts);
         if (p==icon) {
-          p=static_cast<prompt_t>((icon==prompt_t::X)?prompt_t::L:p+1);
+          p=static_cast<prompt_e>((icon==prompt_e::X)?prompt_e::L:p+1);
           attempts++;
           ignoring_icon = false; //    Do move as indicated by on-screen prompt
         } else {
@@ -568,6 +393,8 @@ int main(int argc, char *argv[])
         attempts++;
       }
       printf("%c", prompt_to_char(icon));
+
+// end exhaustive section
       live_icon        = icon;
       live_icon_offset = icon_offset;
       level_icon_count++;
@@ -596,8 +423,9 @@ int main(int argc, char *argv[])
       printf("game completed.\n");
       bool attempt_missing = false;
       unsigned attempts = 0, attempt_level = 0, attempt_icon = 0;
-      for (unsigned i = 0; i < level_id_t::num_levels; i++) {
-        for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
+      for (unsigned i = 0; i < level_e::num_levels; i++) {
+//        for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
+        for (unsigned j = 0; j < qte_tried[i].size(); j++) {
           if (qte_tried[i][j].attempts<5) {
             attempt_missing = true;
             attempts = qte_tried[i][j].attempts;
