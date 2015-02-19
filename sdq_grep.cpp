@@ -97,7 +97,7 @@ inline unsigned calc_score(
         match [i] += sdq_distn(red_run,   score_digits::digits[i][h][2]);
       }
 
-      if (match[i]<best_match) {
+      if (match[i] < best_match) {
         best       = i;
         best_match = match[i];
       }
@@ -230,7 +230,7 @@ prompt_e find_prompt(const DATA32 *data, int width, int height, unsigned &score,
             }
           }
         }   // if (j >= 20 || j < (20+5*40))
-      }
+      } // if (rgb_dist(curr,score_red,1))
     }
 
     if (112==i) // At this point the score has been scanned
@@ -275,6 +275,57 @@ prompt_e find_prompt(const DATA32 *data, int width, int height, unsigned &score,
   return nothing;
 }
 
+inline prompt_e find_secret_icon(const prompt_e icon,
+                                 const unsigned level_icon_count,
+                                 const level_e level)
+{
+  prompt_e secret_icon = nothing;
+  switch (level) {
+    case mummy:
+      if (level_icon_count==2) secret_icon=L;
+      if (level_icon_count==4) secret_icon=X;
+      break;
+    case totem:
+      if (level_icon_count==4) secret_icon=X;
+      break; 
+    case fire_woman:
+      if (level_icon_count==5) secret_icon=L;
+      break;
+    case pyramid_steps:
+      if (level_icon_count==7) secret_icon=X;
+      break;
+    case serpents:
+      if (level_icon_count==8) secret_icon=L;
+      break;
+    case snake:
+      if (level_icon_count==2) secret_icon=L;
+      if (level_icon_count==3) secret_icon=R;
+      break;
+    case dragon:
+      if (level_icon_count==4) secret_icon=D;
+      if (level_icon_count==9) secret_icon=L;
+      break;
+    case river_jump:
+      if (level_icon_count==4) secret_icon=L;
+      break;
+    case windmill:
+      if (level_icon_count==4) secret_icon=X;
+      if (level_icon_count==5) secret_icon=L;
+      break;
+    case witch:
+      if (level_icon_count==10) secret_icon=X;
+      break;
+    default: break;
+  }
+  if (secret_icon != nothing) {
+    printf("secret: %c", prompt_to_char(secret_icon));
+  } else {
+    secret_icon = icon;
+  }
+  return secret_icon;
+}
+
+
 // Pertinent data relating to a single Quick Time Event (QTE)
 struct qte_info {
   std::list<unsigned> bonuses;
@@ -299,21 +350,22 @@ int main(int argc, char *argv[])
   get_coords(target,x,y,w,h);          // x, y, w and h are returned
 
   const sdq_moves move_bank; // The full, conventional icon sequence for SDQ.
-
-  prompt_e prev_icon = nothing;
-  unsigned prev_score = 0;
-  unsigned level_icon_count = 0;
-  prompt_e live_icon = nothing;
-  level_e   level = bats;
 //  qte_info qte_tried[level_e::num_levels][skeletons_t::size()];
   std::vector<qte_info> qte_tried[level_e::num_levels];
 
   for (unsigned int v = 0; v < level_e::num_levels; v++) {
     qte_tried[v].resize(move_bank.level_moves[v].size());
   }
+
+  prompt_e prev_icon = nothing;
+  unsigned prev_score = 0;
+  unsigned level_icon_count = 0;
+  prompt_e live_icon = nothing;
+  level_e   level = bats;
  
   unsigned live_icon_offset;
   bool ignoring_icon = false;
+  bool max_score_play = true; // Play the 14 secret moves.
   bool running = true;
   do {
     // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
@@ -338,28 +390,22 @@ int main(int argc, char *argv[])
                                               : "(bonus)";
       const char *lstr = level_to_string(level);
       unsigned bonus = score-prev_score;
-      /*if (live_icon != nothing)// && ignoring_icon)
-        printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
-                                         ib, bonus, score, lstr);
-      */
 
       if (ignoring_icon) {
         if (live_icon != nothing) {
-          printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
-                                           ib, bonus, score, lstr);
+          //printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
+          //                                 ib, bonus, score, lstr);
           qte_tried[level][level_icon_count].bonuses.push_front(bonus);
           qte_tried[level][level_icon_count].moves.push_front(live_icon);
         }
       } else {
         qte_tried[level][level_icon_count].normal_bonus=bonus;
       }
-      /*if (live_icon == nothing) {
-        printf("\n    %8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
-//        level_icon_count = 0; // But there's no bonus if you die on a level.
-      } else {
-        printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
-                                         ib, score-prev_score, score, lstr);
-      }*/
+
+      if (live_icon == nothing) { printf("\n    "); }
+      else                      { printf("\n%2d ", level_icon_count); }
+      printf("%8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
+
       live_icon = nothing;        // n.b.
       // qte_tried[level][level_icon_count].normal_bonus
     }
@@ -377,7 +423,7 @@ int main(int argc, char *argv[])
         level = level_from_icon_offset(icon_offset);
       }
 // begin exhaustive section
-
+/*
       unsigned &attempts = qte_tried[level][level_icon_count].attempts;
       ignoring_icon    = false;
       if (attempts < 5) {
@@ -393,11 +439,15 @@ int main(int argc, char *argv[])
         attempts++;
       }
       printf("%c", prompt_to_char(icon));
-
+*/
 // end exhaustive section
+      level_icon_count++;
+      if (max_score_play) {
+        icon = find_secret_icon(icon, level_icon_count, level);
+        //printf("((%d-%s))", level_icon_count, level_to_string(level));
+      }
       live_icon        = icon;
       live_icon_offset = icon_offset;
-      level_icon_count++;
 
       send_key(xdo, target, icon);
     }
