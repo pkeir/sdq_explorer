@@ -33,7 +33,7 @@ struct sdq_moves {
     level_moves[ windmill ]       = {L,U,X,R,U};
     level_moves[ chariots ]       = {U,U,U,U,U,U};
     level_moves[ stair_chute ]    = {L};
-    level_moves[ closing_walls ]  = {L};
+    level_moves[ closing_walls ]  = {U};
     level_moves[ winged_goblins ] = {X,X};
     level_moves[ laser_eyes ]     = {L,R,U,L};
     level_moves[ witch ]          = {R,X,L,U,R,L,X,X,R,L,X};

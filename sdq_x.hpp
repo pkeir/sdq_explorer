@@ -1,7 +1,15 @@
 #ifndef SDQ_X_HPP
 #define SDQ_X_HPP
 
+#include <cstring>     // memset
+
 #include "sdq_game_params.hpp"
+
+// XStringToKeysym and XKeysymToString can be useful in tracking down
+// the strings expected by libxdo's xdo_send_keysequence_window.
+// e.g. XK_Left is "Left" and XK_space is "space"
+// To use them #include <X11/keysym.h>; though the symbol definitions
+// are in /usr/include/X11/keysymdef.h
 
 // This derived from int cmd_search(context_t *) in xdotool's cmd_search.c
 Window find_window(xdo_t *xdo, const char *str)
