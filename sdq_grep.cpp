@@ -1,33 +1,198 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <list>
-#include <cstring>     // memset
-#include <chrono>
-#include <thread>
-#include <climits>
-#include <Imlib2.h>
+#include "sdq_grep.hpp"
 
-// sudo apt-get install libpng-dev libfreetype6-dev libimlib2-dev
-// XStringToKeysym and XKeysymToString can be useful in tracking down
-// the strings expected by libxdo's xdo_send_keysequence_window.
-// e.g. XK_Left is "Left" and XK_space is "space"
-// To use them #include <X11/keysym.h>; though the symbol definitions
-// are in /usr/include/X11/keysymdef.h
+int main(int argc, char *argv[])
+{
+  int        x, y, w, h;
+  prompt_e   prev_icon        = nothing;
+  level_e    level            = bats;
+  unsigned   level_icon_count = 0;
+  const char daphne[] =
+    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
 
-extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
-#include <xdo.h> // sudo apt-get install libxdo-dev
-};
+  xdo_t *xdo    = xdo_new(NULL);
+  Window target = find_window(xdo, daphne);
+  get_coords(target,x,y,w,h); // x, y, w and h are returned
+  const sdq_moves move_bank;  // The full, conventional icon sequence for SDQ.
 
-#include "sdq_x.hpp"
-#include "sdq_game_params.hpp"
-#include "sdq_rgb.hpp"
-#include "score_digits.hpp"
+  do {
+    unsigned score, icon_offset;
 
-//#define SCREENSHOT  
+    Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1); // 640x480
+    imlib_context_set_image(img);
+    DATA32 const *data = imlib_image_get_data_for_reading_only();
 
-// g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
+    prompt_e icon = find_prompt(data,w,h,score,icon_offset); 
+    if (prev_icon == nothing && icon != nothing) {
+      if (level_completed(level,level_icon_count,move_bank)) {
+        level = level_from_icon_offset(icon_offset);
+        level_icon_count = 0;
+      }
+      level_icon_count++;
+      fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
+      icon = find_secret_icon(icon, level_icon_count, level);
+      if (icon != move_bank.level_moves[level][level_icon_count-1]) {
+        char filename[128];
+        sprintf(filename, "%s%s_%02d_%s_%06d.png", "images/special/",
+                  level_to_string(level), level_icon_count,
+                  prompt_to_string(icon), score);
+        fprintf(stderr,"%s\n", filename);
+        take_screenshot(filename, img);
+      }
+      send_key(xdo, target, icon);
+    }
+    imlib_free_image();
+    prev_icon = icon;
+  } while (!(level == witch && level_icon_count == 11));
+
+  xdo_free(xdo);
+  return 0;
+}
+
+int old_main(int argc, char *argv[])
+{
+  int        x, y, w, h;
+  const char daphne[] =
+    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
+  setbuf(stdout,NULL);    // Flush ok; else use fprintf(stderr,"hello");
+
+  xdo_t *xdo    = xdo_new(NULL);
+  Window target = find_window(xdo, daphne);
+  get_coords(target,x,y,w,h);          // x, y, w and h are returned
+
+  const sdq_moves move_bank; // The full, conventional icon sequence for SDQ.
+//  qte_info qte_tried[level_e::num_levels][skeletons_t::size()];
+  std::vector<qte_info> qte_tried[level_e::num_levels];
+
+  for (unsigned int v = 0; v < level_e::num_levels; v++) {
+    qte_tried[v].resize(move_bank.level_moves[v].size());
+  }
+
+  prompt_e prev_icon = nothing;
+  unsigned prev_score = 0;
+  unsigned level_icon_count = 0;
+  prompt_e live_icon = nothing;
+  level_e   level = bats;
+ 
+  unsigned live_icon_offset;
+  bool ignoring_icon = false;
+  bool max_score_play = false; // Play the 14 secret moves.
+  bool running = true;
+  do {
+    Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1); // 640x480
+    imlib_context_set_image(img);
+    DATA32 const *data = imlib_image_get_data_for_reading_only();
+    unsigned score;
+    unsigned icon_offset;
+    prompt_e icon = find_prompt(data,w,h,score,icon_offset); 
+
+    if (score != prev_score) {
+      const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
+                                              : "(bonus)";
+      const char *lstr = level_to_string(level);
+      unsigned bonus = score-prev_score;
+
+      if (ignoring_icon) {
+        if (live_icon != nothing) {
+          printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
+                                           ib, bonus, score, lstr);
+          assert(level_icon_count-1<qte_tried[level].size());
+          qte_tried[level][level_icon_count-1].bonuses.push_front(bonus);
+          qte_tried[level][level_icon_count-1].moves.push_front(live_icon);
+        }
+      } else {
+        assert(level_icon_count-1<qte_tried[level].size());
+/*LLRLLRLLLLURRURRRUUUUUUUUUUUUUDXDDDDDDDDRLDRLLRRXLLsdq_grep: sdq_grep.cpp:393: int main(int, char **): Assertion `level_icon_count<qte_tried[level].size()' failed.
+Aborted (core dumped)*/
+        qte_tried[level][level_icon_count-1].normal_bonus=bonus;
+      }
+
+      /*if (live_icon == nothing) { printf("\n    "); }
+      else                      { printf("\n%2d ", level_icon_count); }
+      printf("%8s %5d %5d %s\n", ib, score-prev_score, score, lstr);*/
+
+      live_icon = nothing;        // n.b.
+      // qte_tried[level][level_icon_count].normal_bonus
+    }
+
+    if (prev_icon == nothing && icon != nothing) {
+      // live_icon is reset the last time the score was increased
+      if (live_icon != nothing) {
+        // printf("There's been a murder!\n");
+        level_icon_count = 0;
+      }
+      if (level_completed(level,level_icon_count,move_bank)) {
+        level_icon_count = 0;  // then level has been successfully completed
+      }
+      if (level_icon_count==0) {
+        level = level_from_icon_offset(icon_offset);
+      }
+
+// begin exhaustive section
+      unsigned &attempts = qte_tried[level][level_icon_count].attempts;
+      ignoring_icon    = false; //   Do move as indicated by on-screen prompt
+      if (attempts < 5) {
+        prompt_e p = static_cast<prompt_e>(prompt_e::L + attempts);
+        if (p==icon) {
+          p=static_cast<prompt_e>((icon==prompt_e::X) ? prompt_e::L : p+1);
+        }
+        ignoring_icon = true;  // Don't move as indicated by on-screen prompt
+        icon = p;
+        attempts++;
+      }
+      printf("%c", prompt_to_char(icon));
+// end exhaustive section
+
+      level_icon_count++;
+      if (max_score_play) {
+        icon = find_secret_icon(icon, level_icon_count, level);
+        //printf("((%d-%s))", level_icon_count, level_to_string(level));
+      }
+      live_icon        = icon;
+      live_icon_offset = icon_offset;
+
+      send_key(xdo, target, icon);
+    }
+
+// Only 1 attempts on level 22, icon 10.
+
+    imlib_free_image();
+    prev_score = score;
+    prev_icon  = icon;
+    if (level == witch && level_icon_count == 11) {
+      printf("game completed.\n");
+      bool attempt_missing = false;
+      unsigned attempts = 0, attempt_level = 0, attempt_icon = 0;
+      for (unsigned i = 0; i < level_e::num_levels; i++) {
+//        for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
+        for (unsigned j = 0; j < qte_tried[i].size(); j++) {
+          if (qte_tried[i][j].attempts < 5) {
+            attempt_missing = true;
+            attempts = qte_tried[i][j].attempts;
+            attempt_level = i;
+            attempt_icon  = j;
+          }
+        }
+      }
+      if (attempt_missing) {
+        printf("Only %d attempts on level %d, icon %d.\n",
+                attempts, attempt_level, attempt_icon);
+        printf("Starting again in 5 minutes...\n");
+        std::this_thread::sleep_for(std::chrono::minutes(5));
+        printf("Starting now.\n");
+        xdo_send_keysequence_window_down(xdo, target, "1", 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        xdo_send_keysequence_window_up  (xdo, target, "1", 0);
+      } else {
+        printf("all done.\n");
+        running = false;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+  } while (running);
+
+  xdo_free(xdo);
+  return 0;
+}
 
 // normalised distance
 inline float    sdq_distn(unsigned x, unsigned y) {
@@ -170,8 +335,8 @@ inline const char *level_to_string(const level_e level) {
   };
 }
 
-prompt_e find_prompt(const DATA32 *data, int width, int height, unsigned &score,
-                     unsigned &icon_offset)
+prompt_e find_prompt(const DATA32 *data, const int width, const int height,
+                     unsigned &score, unsigned &icon_offset)
 {
   const DATA32 arrow_red    = 0xfffd0100; // ARGB - via grabc
   const DATA32 arrow_blue   = 0xff00ffd8;
@@ -318,189 +483,16 @@ inline prompt_e find_secret_icon(const prompt_e icon,
     default: break;
   }
   if (secret_icon != nothing) {
-    printf("secret: %c", prompt_to_char(secret_icon));
+    // printf something
   } else {
     secret_icon = icon;
   }
   return secret_icon;
 }
 
-
-// Pertinent data relating to a single Quick Time Event (QTE)
-struct qte_info {
-  std::list<unsigned> bonuses;
-  std::list<prompt_e> moves;
-  unsigned normal_bonus = 0;
-  unsigned attempts     = 0;
-};
-
-int main(int argc, char *argv[])
+void take_screenshot(const char *filename, const Imlib_Image &img)
 {
-  Imlib_Image image   = NULL; // ImlibImage (no underscore)
-  Imlib_Image img_arr[16];
-  Window      target  = 0;
-  int         x, y, w, h;
-  const char daphne[] =
-    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
-  setbuf(stdout,NULL);    // Flush ok; else use fprintf(stderr,"hello");
-
-  xdo_t *xdo = xdo_new(NULL);
-  //target = find_window(xdo, "ImageMagick");
-  target = find_window(xdo, daphne);
-  get_coords(target,x,y,w,h);          // x, y, w and h are returned
-
-  const sdq_moves move_bank; // The full, conventional icon sequence for SDQ.
-//  qte_info qte_tried[level_e::num_levels][skeletons_t::size()];
-  std::vector<qte_info> qte_tried[level_e::num_levels];
-
-  for (unsigned int v = 0; v < level_e::num_levels; v++) {
-    qte_tried[v].resize(move_bank.level_moves[v].size());
-  }
-
-  prompt_e prev_icon = nothing;
-  unsigned prev_score = 0;
-  unsigned level_icon_count = 0;
-  prompt_e live_icon = nothing;
-  level_e   level = bats;
- 
-  unsigned live_icon_offset;
-  bool ignoring_icon = false;
-  bool max_score_play = true; // Play the 14 secret moves.
-  bool running = true;
-  do {
-    // img_arr[i] = imlib_create_image_from_drawable(0,x,y,w,h,1);
-    // imlib_context_set_image(img_arr[i]);
-    Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1);
-    imlib_context_set_image(img);
-    //im->data = malloc(width * height * sizeof(DATA32)); // ARGB32
-    //See $HOME/apps/imlib2-1.4.4/src/lib/api.c
-//    DATA32 *data = img_arr[i]->data;
-    //DATA32 const *data = imlib_image_get_data_for_reading_only();
-    DATA32 const *data = imlib_image_get_data_for_reading_only();
-    //printf("w:%d h:%d\n", w,h);
-    //printf("%p\n", data);
-    // 640x480
-    unsigned score;
-    // unsigned xcoord, ycoord; 
-    unsigned icon_offset;
-    prompt_e icon = find_prompt(data,w,h,score,icon_offset); 
-#ifndef SCREENSHOT
-    if (score != prev_score) {
-      const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
-                                              : "(bonus)";
-      const char *lstr = level_to_string(level);
-      unsigned bonus = score-prev_score;
-
-      if (ignoring_icon) {
-        if (live_icon != nothing) {
-          //printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
-          //                                 ib, bonus, score, lstr);
-          qte_tried[level][level_icon_count].bonuses.push_front(bonus);
-          qte_tried[level][level_icon_count].moves.push_front(live_icon);
-        }
-      } else {
-        qte_tried[level][level_icon_count].normal_bonus=bonus;
-      }
-
-      if (live_icon == nothing) { printf("\n    "); }
-      else                      { printf("\n%2d ", level_icon_count); }
-      printf("%8s %5d %5d %s\n", ib, score-prev_score, score, lstr);
-
-      live_icon = nothing;        // n.b.
-      // qte_tried[level][level_icon_count].normal_bonus
-    }
-#endif
-    if (prev_icon == nothing && icon != nothing) {
-      // live_icon is reset the last time the score was increased
-      if (live_icon != nothing) {
-        // printf("There's been a murder!\n");
-        level_icon_count = 0;
-      }
-      if (level_completed(level,level_icon_count,move_bank)) {
-        level_icon_count = 0;  // then level has been successfully completed
-      }
-      if (level_icon_count==0) {
-        level = level_from_icon_offset(icon_offset);
-      }
-// begin exhaustive section
-/*
-      unsigned &attempts = qte_tried[level][level_icon_count].attempts;
-      ignoring_icon    = false;
-      if (attempts < 5) {
-        prompt_e p = static_cast<prompt_e>(prompt_e::L + attempts);
-        if (p==icon) {
-          p=static_cast<prompt_e>((icon==prompt_e::X)?prompt_e::L:p+1);
-          attempts++;
-          ignoring_icon = false; //    Do move as indicated by on-screen prompt
-        } else {
-          ignoring_icon = true;  // Don't move as indicated by on-screen prompt
-        }
-        icon = p;
-        attempts++;
-      }
-      printf("%c", prompt_to_char(icon));
-*/
-// end exhaustive section
-      level_icon_count++;
-      if (max_score_play) {
-        icon = find_secret_icon(icon, level_icon_count, level);
-        //printf("((%d-%s))", level_icon_count, level_to_string(level));
-      }
-      live_icon        = icon;
-      live_icon_offset = icon_offset;
-
-      send_key(xdo, target, icon);
-    }
-
-#ifdef  SCREENSHOT
-//    if (prev_icon==nothing && icon != nothing) {
-    if (score != prev_score) {
-      char filename_in[64];// = "images/playthrough/img???_00000.png";
-      sprintf(filename_in,
-        "%s_%03d_%06d.png", "images/playthrough/img", level_icon_count, score);
-
-      printf("%s\n", filename_in);
-      imlib_context_set_image(img);
-      imlib_image_set_format("png");
-      imlib_save_image(filename_in);
-    }
-#endif
-
-    imlib_free_image();
-    prev_score = score;
-    prev_icon  = icon;
-    if (level == witch && level_icon_count == 11) {
-      printf("game completed.\n");
-      bool attempt_missing = false;
-      unsigned attempts = 0, attempt_level = 0, attempt_icon = 0;
-      for (unsigned i = 0; i < level_e::num_levels; i++) {
-//        for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
-        for (unsigned j = 0; j < qte_tried[i].size(); j++) {
-          if (qte_tried[i][j].attempts<5) {
-            attempt_missing = true;
-            attempts = qte_tried[i][j].attempts;
-            attempt_level = i;
-            attempt_icon  = j;
-          }
-        }
-      }
-      if (attempt_missing) {
-        printf("Only %d attempts on level %d, icon %d.\n",
-                attempts, attempt_level, attempt_icon);
-        printf("Starting again in 5 minutes...\n");
-        std::this_thread::sleep_for(std::chrono::minutes(5));
-        printf("Starting now.\n");
-        xdo_send_keysequence_window_down(xdo, target, "1", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        xdo_send_keysequence_window_up  (xdo, target, "1", 0);
-      } else {
-        printf("all done.\n");
-        running = false;
-      }
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(30));
-  } while (running);
-
-  xdo_free(xdo);
-  return 0;
+  imlib_context_set_image(img);  // already called?
+  imlib_image_set_format("png");
+  imlib_save_image(filename);
 }
