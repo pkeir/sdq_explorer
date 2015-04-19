@@ -1,4 +1,4 @@
-#include "sdq_grep.hpp"
+#include "sdq_explorer.hpp"
 
 int main(int argc, char *argv[])
 {
