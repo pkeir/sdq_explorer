@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     printf("  {");
     for (unsigned i = 0; i < num_hsamples; i++) {
 //      if (0==white_run[digit][i]) {
-//        fprintf(stderr,"error: division by zero would occur in sdq_grep\n");
+//        fprintf(stderr,"error: division by zero would occur in sdq_explorer\n");
 //      }
       printf("{%2d,%2d,%2d,%2d},", white_run[digit][i], white_start[digit][i],
                                      red_run[digit][i],   red_start[digit][i]);

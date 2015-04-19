@@ -1,5 +1,5 @@
-#ifndef SDQ_GREP_HPP
-#define SDQ_GREP_HPP
+#ifndef SDQ_EXPLORER_HPP
+#define SDQ_EXPLORER_HPP
 
 #include <iostream>
 #include <fstream>
@@ -13,7 +13,7 @@
 #include <Imlib2.h>
 
 // sudo apt-get install libpng-dev libfreetype6-dev libimlib2-dev
-// g++ -std=c++11 sdq_grep.cpp -lX11 -lImlib2 -lxdo -o sdq_grep
+// g++ -std=c++11 sdq_explorer.cpp -lX11 -lImlib2 -lxdo -o sdq_explorer
 
 extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include <xdo.h> // sudo apt-get install libxdo-dev
@@ -47,4 +47,4 @@ struct qte_info {
   unsigned attempts     = 0;
 };
 
-#endif // SDQ_GREP_HPP
+#endif // SDQ_EXPLORER_HPP

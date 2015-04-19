@@ -15,7 +15,7 @@ XID=$(xdotool search --name "ImageMagick")
 #echo $XID
 
 # g++ sdq_grab.cpp -lX11 -o sdq_grab
-./sdq_grep $XID
+./sdq_explorer $XID
 
 #xdotool windowkill $XID
 #xdotool windowunmap --sync $XID
