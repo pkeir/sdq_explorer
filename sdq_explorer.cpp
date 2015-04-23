@@ -1,14 +1,55 @@
 #include "sdq_explorer.hpp"
 
-int playthrough(bool = true);
+// sudo apt-get install libpng-dev libfreetype6-dev libimlib2-dev
+// g++ -std=c++11 sdq_explorer.cpp -lX11 -lImlib2 -lxdo -o sdq_explorer
 
 int main(int argc, char *argv[])
 {
-  playthrough();
+  // playthrough();
+  exhaustive();
   return 0;
 }
 
-int playthrough(bool use_secret_moves)
+void exhaustive()
+{
+  int        x, y, w, h;
+  prompt_e   prev_icon        = nothing;
+  level_e    level            = bats;
+  unsigned   level_icon_count = 0;
+  const char daphne[] =
+    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
+
+  xdo_t *xdo    = xdo_new(NULL);
+  Window target = find_window(xdo, daphne);
+  get_coords(target,x,y,w,h); // x, y, w and h are returned
+  const sdq_moves move_bank;  // The full, conventional icon sequence for SDQ.
+  sdq_moves_exhaustive move_bank_all(move_bank); // All 5 moves, for each QTE
+
+  do {
+    unsigned score, icon_offset;
+
+    Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1); // 640x480
+    imlib_context_set_image(img);
+    DATA32 const *data = imlib_image_get_data_for_reading_only();
+
+    prompt_e icon = find_prompt(data, w, h, score, icon_offset); 
+    if (prev_icon == nothing && icon != nothing) {
+      if (level_completed(level,level_icon_count,move_bank)) {
+        level = level_from_icon_offset(icon_offset);
+        level_icon_count = 0;
+      }
+      level_icon_count++;
+      fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
+      send_key(xdo, target, icon);
+    }
+    imlib_free_image();
+    prev_icon = icon;
+  } while (!(level == witch && level_icon_count == 11));
+
+  xdo_free(xdo);
+}
+
+void playthrough(bool use_secret_moves)
 {
   int        x, y, w, h;
   prompt_e   prev_icon        = nothing;
@@ -54,7 +95,6 @@ int playthrough(bool use_secret_moves)
   } while (!(level == witch && level_icon_count == 11));
 
   xdo_free(xdo);
-  return 0;
 }
 
 int old_main(int argc, char *argv[])

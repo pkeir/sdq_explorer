@@ -2,6 +2,7 @@
 #define SDQ_GAME_PARAMS_HPP
 
 #include <vector>
+#include <forward_list>
 
 enum prompt_e { nothing, L, R, U, D, X };
 enum level_e  { bats, totem, fire_woman, pyramid_steps, water_lift, serpents,
@@ -39,7 +40,26 @@ struct sdq_moves {
     level_moves[ witch ]          = {R,X,L,U,R,L,X,X,R,L,X};
   }
 
-  std::vector<prompt_e> level_moves[level_e::num_levels];
+  using type = std::vector<prompt_e>;
+  type level_moves[level_e::num_levels];
+};
+
+struct sdq_moves_exhaustive {
+
+  sdq_moves_exhaustive(const sdq_moves &move_bank) {
+
+    for (unsigned i = 0; i < level_e::num_levels; ++i) {
+      for (const prompt_e &p : move_bank.level_moves[i]) {
+        auto comp = [&p](const prompt_e &, const prompt_e &b) { return b==p; };
+        std::forward_list<prompt_e> ps{L,R,U,D,X};
+        ps.sort(comp);                     // p is now in last position
+        level_moves_all[i].push_back(ps);
+      }
+    }
+  }
+
+  using type = std::vector<std::forward_list<prompt_e>>;
+  type level_moves_all[level_e::num_levels];
 };
 
 #endif // SDQ_GAME_PARAMS_HPP
