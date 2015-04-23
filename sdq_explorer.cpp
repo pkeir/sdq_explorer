@@ -1,6 +1,14 @@
 #include "sdq_explorer.hpp"
 
+int playthrough(bool = true);
+
 int main(int argc, char *argv[])
+{
+  playthrough();
+  return 0;
+}
+
+int playthrough(bool use_secret_moves)
 {
   int        x, y, w, h;
   prompt_e   prev_icon        = nothing;
@@ -21,7 +29,7 @@ int main(int argc, char *argv[])
     imlib_context_set_image(img);
     DATA32 const *data = imlib_image_get_data_for_reading_only();
 
-    prompt_e icon = find_prompt(data,w,h,score,icon_offset); 
+    prompt_e icon = find_prompt(data, w, h, score, icon_offset); 
     if (prev_icon == nothing && icon != nothing) {
       if (level_completed(level,level_icon_count,move_bank)) {
         level = level_from_icon_offset(icon_offset);
@@ -29,15 +37,16 @@ int main(int argc, char *argv[])
       }
       level_icon_count++;
       fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
-      icon = find_secret_icon(level, icon, level_icon_count);
-      if (icon != move_bank.level_moves[level][level_icon_count-1]) {
+      if (use_secret_moves)
+        icon = find_secret_icon(level, icon, level_icon_count);
+      /*if (icon != move_bank.level_moves[level][level_icon_count-1]) {
         char filename[128];
         sprintf(filename, "%s%s_%02d_%s_%06d.png", "images/special/",
                   level_to_string(level), level_icon_count,
                   prompt_to_string(icon), score);
         fprintf(stderr,"%s\n", filename);
         take_screenshot(filename, img);
-      }
+      }*/
       send_key(xdo, target, icon);
     }
     imlib_free_image();
