@@ -53,13 +53,13 @@ struct sdq_moves_exhaustive {
         auto comp = [&p](const prompt_e &, const prompt_e &b) { return b==p; };
         std::forward_list<prompt_e> ps{L,R,U,D,X};
         ps.sort(comp);                     // p is now in last position
-        level_moves_all[i].push_back(ps);
+        moves[i].push_back(ps);
       }
     }
   }
 
   using type = std::vector<std::forward_list<prompt_e>>;
-  type level_moves_all[level_e::num_levels];
+  type moves[level_e::num_levels];
 };
 
 #endif // SDQ_GAME_PARAMS_HPP
