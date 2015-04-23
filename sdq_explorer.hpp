@@ -36,7 +36,7 @@ inline       char  prompt_to_char  (const prompt_e);
 inline const char *level_to_string (const level_e);
 prompt_e find_prompt(const DATA32 *, const int, const int,
                      unsigned &, unsigned &);
-inline prompt_e find_secret_icon(const prompt_e, const unsigned, const level_e);
+inline prompt_e find_secret_icon(const level_e, const prompt_e, const unsigned);
 void take_screenshot(const char *, const Imlib_Image &);
 
 // Pertinent data relating to a single Quick Time Event (QTE)
