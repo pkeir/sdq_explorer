@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
       }
       level_icon_count++;
       fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
-      icon = find_secret_icon(icon, level_icon_count, level);
+      icon = find_secret_icon(level, icon, level_icon_count);
       if (icon != move_bank.level_moves[level][level_icon_count-1]) {
         char filename[128];
         sprintf(filename, "%s%s_%02d_%s_%06d.png", "images/special/",
@@ -144,7 +144,7 @@ Aborted (core dumped)*/
 
       level_icon_count++;
       if (max_score_play) {
-        icon = find_secret_icon(icon, level_icon_count, level);
+        icon = find_secret_icon(level, icon, level_icon_count);
         //printf("((%d-%s))", level_icon_count, level_to_string(level));
       }
       live_icon        = icon;
@@ -440,9 +440,11 @@ prompt_e find_prompt(const DATA32 *data, const int width, const int height,
   return nothing;
 }
 
-inline prompt_e find_secret_icon(const prompt_e icon,
-                                 const unsigned level_icon_count,
-                                 const level_e level)
+// For a given level, icon, and icon count, either returns the given icon;
+// or on 14 special occasions, returns an alternative bonus icon
+inline prompt_e find_secret_icon(const level_e level,
+                                 const prompt_e icon,
+                                 const unsigned level_icon_count)
 {
   prompt_e secret_icon = nothing;
   switch (level) {
