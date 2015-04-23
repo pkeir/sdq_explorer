@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[])
 {
-  // playthrough();
+  //playthrough();
   exhaustive();
   return 0;
 }
@@ -13,7 +13,9 @@ int main(int argc, char *argv[])
 void exhaustive()
 {
   int        x, y, w, h;
-  prompt_e   prev_icon        = nothing;
+  bool       score_changed    = false;
+  unsigned   prev_score       = 0;
+  prompt_e   prev_icon        = nothing, chosen_move = nothing;
   level_e    level            = bats;
   unsigned   level_icon_count = 0;
   const char daphne[] =
@@ -33,17 +35,38 @@ void exhaustive()
     DATA32 const *data = imlib_image_get_data_for_reading_only();
 
     prompt_e icon = find_prompt(data, w, h, score, icon_offset); 
-    if (prev_icon == nothing && icon != nothing) {
-      if (level_completed(level,level_icon_count,move_bank)) {
+    if (prev_icon == nothing && icon != nothing) {    // A fresh & valid icon
+
+      const bool death_occurred = !score_changed;
+
+      if (death_occurred || level_completed(level,level_icon_count,move_bank)) {
         level = level_from_icon_offset(icon_offset);
         level_icon_count = 0;
       }
+
+      auto &slist = move_bank_all.moves[level][level_icon_count];
+      if (!slist.empty()) {
+        icon = slist.front(); slist.pop_front();
+      }
+
+      chosen_move = icon;
+      send_key(xdo, target, chosen_move);
+      fprintf(stderr,"%c", prompt_to_char(chosen_move));
+
       level_icon_count++;
-      fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
-      send_key(xdo, target, icon);
+      // fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
     }
-    imlib_free_image();
+
+    if (score != prev_score) {
+      score_changed = true;
+      prev_score    = score;
+      if (chosen_move != move_bank.level_moves[level][level_icon_count]) { //!!
+        fprintf(stderr,"\n%s %d\n", level_to_string(level), level_icon_count);
+      }
+    }
+
     prev_icon = icon;
+    imlib_free_image();
   } while (!(level == witch && level_icon_count == 11));
 
   xdo_free(xdo);
@@ -76,8 +99,7 @@ void playthrough(bool use_secret_moves)
         level = level_from_icon_offset(icon_offset);
         level_icon_count = 0;
       }
-      level_icon_count++;
-      fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
+      fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count+1);
       if (use_secret_moves)
         icon = find_secret_icon(level, icon, level_icon_count);
       /*if (icon != move_bank.level_moves[level][level_icon_count-1]) {
@@ -89,9 +111,10 @@ void playthrough(bool use_secret_moves)
         take_screenshot(filename, img);
       }*/
       send_key(xdo, target, icon);
+      level_icon_count++;
     }
-    imlib_free_image();
     prev_icon = icon;
+    imlib_free_image();
   } while (!(level == witch && level_icon_count == 11));
 
   xdo_free(xdo);
@@ -120,7 +143,7 @@ int old_main(int argc, char *argv[])
   unsigned prev_score = 0;
   unsigned level_icon_count = 0;
   prompt_e live_icon = nothing;
-  level_e   level = bats;
+  level_e  level = bats;
  
   unsigned live_icon_offset;
   bool ignoring_icon = false;
@@ -498,38 +521,38 @@ inline prompt_e find_secret_icon(const level_e level,
   prompt_e secret_icon = nothing;
   switch (level) {
     case mummy:
-      if (level_icon_count==2) secret_icon=L;
-      if (level_icon_count==4) secret_icon=X;
+      if (level_icon_count==1) secret_icon=L;
+      if (level_icon_count==3) secret_icon=X;
       break;
     case totem:
-      if (level_icon_count==4) secret_icon=X;
+      if (level_icon_count==3) secret_icon=X;
       break; 
     case fire_woman:
-      if (level_icon_count==5) secret_icon=L;
-      break;
-    case pyramid_steps:
-      if (level_icon_count==7) secret_icon=X;
-      break;
-    case serpents:
-      if (level_icon_count==8) secret_icon=L;
-      break;
-    case snake:
-      if (level_icon_count==2) secret_icon=L;
-      if (level_icon_count==3) secret_icon=R;
-      break;
-    case dragon:
-      if (level_icon_count==4) secret_icon=D;
-      if (level_icon_count==9) secret_icon=L;
-      break;
-    case river_jump:
       if (level_icon_count==4) secret_icon=L;
       break;
+    case pyramid_steps:
+      if (level_icon_count==6) secret_icon=X;
+      break;
+    case serpents:
+      if (level_icon_count==7) secret_icon=L;
+      break;
+    case snake:
+      if (level_icon_count==1) secret_icon=L;
+      if (level_icon_count==2) secret_icon=R;
+      break;
+    case dragon:
+      if (level_icon_count==3) secret_icon=D;
+      if (level_icon_count==8) secret_icon=L;
+      break;
+    case river_jump:
+      if (level_icon_count==3) secret_icon=L;
+      break;
     case windmill:
-      if (level_icon_count==4) secret_icon=X;
-      if (level_icon_count==5) secret_icon=L;
+      if (level_icon_count==3) secret_icon=X;
+      if (level_icon_count==4) secret_icon=L;
       break;
     case witch:
-      if (level_icon_count==10) secret_icon=X;
+      if (level_icon_count==9) secret_icon=X;
       break;
     default: break;
   }
