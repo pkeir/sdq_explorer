@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 void exhaustive()
 {
   int        x, y, w, h;
-  bool       score_changed    = false;
+  bool       score_changed; // level_completed ensures the 1st if evaluates true
   unsigned   prev_score       = 0;
   prompt_e   prev_icon        = nothing, chosen_move = nothing;
   level_e    level            = bats;
@@ -54,15 +54,15 @@ void exhaustive()
       fprintf(stderr,"%c", prompt_to_char(chosen_move));
 
       level_icon_count++;
-      // fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count);
+      score_changed = false;
     }
 
     if (score != prev_score) {
+      if (chosen_move != move_bank.level_moves[level][level_icon_count-1]) {
+        fprintf(stderr,"\n%s %d\n", level_to_string(level), level_icon_count-1);
+      }
       score_changed = true;
       prev_score    = score;
-      if (chosen_move != move_bank.level_moves[level][level_icon_count]) { //!!
-        fprintf(stderr,"\n%s %d\n", level_to_string(level), level_icon_count);
-      }
     }
 
     prev_icon = icon;
