@@ -59,7 +59,7 @@ void exhaustive()
 
     if (score != prev_score) {
       if (chosen_move != move_bank.level_moves[level][level_icon_count-1]) {
-        fprintf(stderr,"\n%s %d\n", level_to_string(level), level_icon_count-1);
+        fprintf(stderr,"\n%s %d\n", level_to_string(level), level_icon_count);
       }
       score_changed = true;
       prev_score    = score;
@@ -67,7 +67,10 @@ void exhaustive()
 
     prev_icon = icon;
     imlib_free_image();
-  } while (!(level == witch && level_icon_count == 11));
+  } while (!(level == witch && level_icon_count == 11) ||
+           restart_sdq(move_bank_all,xdo,target));
+
+  fprintf(stderr, "\ndone.");
 
   xdo_free(xdo);
 }

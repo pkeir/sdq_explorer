@@ -36,6 +36,7 @@ prompt_e find_prompt(const DATA32 *, const int, const int,
                      unsigned &, unsigned &);
 inline prompt_e find_secret_icon(const level_e, const prompt_e, const unsigned);
 void take_screenshot(const char *, const Imlib_Image &);
+inline bool restart_sdq(const sdq_moves_exhaustive &);
 
 void playthrough(bool = true);
 void exhaustive();
