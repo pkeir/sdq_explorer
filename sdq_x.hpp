@@ -12,7 +12,7 @@
 // are in /usr/include/X11/keysymdef.h
 
 // This derived from int cmd_search(context_t *) in xdotool's cmd_search.c
-Window find_window(xdo_t *xdo, const char *str)
+Window find_window(const xdo_t *xdo, const char *str)
 {
   Window *list, fnd_window = 0;
   unsigned nwindows;
@@ -36,7 +36,7 @@ Window find_window(xdo_t *xdo, const char *str)
   return fnd_window;
 }
 
-void send_key(xdo_t *xdo, Window target, prompt_e x)
+void send_key(const xdo_t *xdo, const Window target, const prompt_e x)
 {
   int key_delay = 100;
   const char *sz_key;
@@ -54,7 +54,7 @@ void send_key(xdo_t *xdo, Window target, prompt_e x)
   xdo_send_keysequence_window_up  (xdo, target, sz_key, 0);
 }
 
-void get_coords(Window target, int &x, int &y, int &w, int &h)
+void get_coords(const Window target, int &x, int &y, int &w, int &h)
 {
   Window   child, root = 0;
   Display *disp = NULL;
@@ -74,6 +74,33 @@ void get_coords(Window target, int &x, int &y, int &w, int &h)
   imlib_context_set_display(disp);
   imlib_context_set_visual(vis);
   imlib_context_set_drawable(root);
+}
+
+inline bool restart_sdq(const sdq_moves_exhaustive &move_bank_all,
+                        const xdo_t *xdo, const Window target)
+{
+  if (move_bank_all.size())
+  {
+      fprintf(stderr, "restart_sdq says %d remain!\n", move_bank_all.size());
+    xdo_send_keysequence_window_down(xdo, target, "F3", 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    xdo_send_keysequence_window_up  (xdo, target, "F3", 0);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    xdo_send_keysequence_window_down(xdo, target, "5", 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    xdo_send_keysequence_window_up  (xdo, target, "5", 0);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    xdo_send_keysequence_window_down(xdo, target, "1", 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    xdo_send_keysequence_window_up  (xdo, target, "1", 0);
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 #endif // SDQ_X_HPP

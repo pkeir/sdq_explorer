@@ -13,7 +13,7 @@ enum level_e  { bats, totem, fire_woman, pyramid_steps, water_lift, serpents,
 
 struct sdq_moves {
 
-  sdq_moves()
+  sdq_moves()                     // 156 moves altogether
   {
     level_moves[ bats ]           = {R,R,R,L,X,X,X};
     level_moves[ totem ]          = {L,R,L,R,D,U};
@@ -52,10 +52,20 @@ struct sdq_moves_exhaustive {
       for (const prompt_e &p : move_bank.level_moves[i]) {
         auto comp = [&p](const prompt_e &, const prompt_e &b) { return b==p; };
         std::forward_list<prompt_e> ps{L,R,U,D,X};
-        ps.sort(comp);                     // p is now in last position
+        ps.sort(comp);        // p, the "correct" move, is now in last position
         moves[i].push_back(ps);
       }
     }
+  }
+
+  unsigned size() const {
+    unsigned ret = 0;
+    for (unsigned i = 0; i < level_e::num_levels; ++i) {
+      for (const std::forward_list<prompt_e> &ps : moves[i]) {
+        ret += std::distance(std::begin(ps), std::end(ps));
+      }
+    }
+    return ret;
   }
 
   using type = std::vector<std::forward_list<prompt_e>>;
