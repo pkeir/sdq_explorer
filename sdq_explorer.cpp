@@ -68,7 +68,7 @@ void exhaustive()
     prev_icon = icon;
     imlib_free_image();
   } while (!(level == witch && level_icon_count == 11) ||
-           restart_sdq(move_bank_all,xdo,target));
+           restart_sdq(xdo,target,move_bank_all,level,level_icon_count));
 
   fprintf(stderr, "\ndone.");
 
