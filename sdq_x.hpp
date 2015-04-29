@@ -36,9 +36,17 @@ Window find_window(const xdo_t *xdo, const char *str)
   return fnd_window;
 }
 
+inline void
+send_key_sz(const xdo_t *xdo, const Window target, const char *sz_key)
+{
+  const int key_delay = 100;
+  xdo_send_keysequence_window_down(xdo, target, sz_key, 0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
+  xdo_send_keysequence_window_up  (xdo, target, sz_key, 0);
+}
+
 void send_key(const xdo_t *xdo, const Window target, const prompt_e x)
 {
-  int key_delay = 100;
   const char *sz_key;
   switch (x) {
     case prompt_e::L: sz_key = "Left";  break;
@@ -49,9 +57,7 @@ void send_key(const xdo_t *xdo, const Window target, const prompt_e x)
     default: printf("error: prompt unrecognised in send_key."); break;
   }
 
-  xdo_send_keysequence_window_down(xdo, target, sz_key, 0);
-  std::this_thread::sleep_for(std::chrono::milliseconds(key_delay));
-  xdo_send_keysequence_window_up  (xdo, target, sz_key, 0);
+  send_key_sz(xdo, target, sz_key);
 }
 
 void get_coords(const Window target, int &x, int &y, int &w, int &h)
@@ -76,25 +82,32 @@ void get_coords(const Window target, int &x, int &y, int &w, int &h)
   imlib_context_set_drawable(root);
 }
 
-inline bool restart_sdq(const sdq_moves_exhaustive &move_bank_all,
-                        const xdo_t *xdo, const Window target)
+inline bool restart_sdq(const xdo_t *xdo, const Window target,
+                        const sdq_moves_exhaustive &move_bank_all,
+                        level_e &level, unsigned &level_icon_count)
 {
   if (move_bank_all.size())
   {
       fprintf(stderr, "restart_sdq says %d remain!\n", move_bank_all.size());
-    xdo_send_keysequence_window_down(xdo, target, "F3", 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    xdo_send_keysequence_window_up  (xdo, target, "F3", 0);
+    send_key_sz(xdo, target, "F3");
     std::this_thread::sleep_for(std::chrono::seconds(5));
-
-    xdo_send_keysequence_window_down(xdo, target, "5", 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    xdo_send_keysequence_window_up  (xdo, target, "5", 0);
+    send_key_sz(xdo, target, "5");
     std::this_thread::sleep_for(std::chrono::seconds(1));
+    send_key_sz(xdo, target, "1");
 
-    xdo_send_keysequence_window_down(xdo, target, "1", 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    xdo_send_keysequence_window_up  (xdo, target, "1", 0);
+    for (unsigned i = 0; i < level_e::num_levels; ++i) {
+      for (const std::forward_list<prompt_e> &ps : move_bank_all.moves[i]) {
+        //unsigned sz = std::distance(std::begin(ps), std::end(ps));
+        /*if (sz) {
+          fprintf(stderr,"\n%s %d (%d)\n",
+            level_to_string(i), level_icon_count);
+        }*/
+        //ret += std::distance(std::begin(ps), std::end(ps));
+      }
+    }
+
+    level            = bats;
+    level_icon_count = 0;
     return true;
   }
   else
