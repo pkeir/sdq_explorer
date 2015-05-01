@@ -84,7 +84,8 @@ void get_coords(const Window target, int &x, int &y, int &w, int &h)
 
 inline bool restart_sdq(const xdo_t *xdo, const Window target,
                         const sdq_moves_exhaustive &move_bank_all,
-                        level_e &level, unsigned &level_icon_count)
+                        level_e &level, unsigned &level_icon_count,
+                        unsigned &prev_score)
 {
   if (move_bank_all.size())
   {
@@ -96,18 +97,25 @@ inline bool restart_sdq(const xdo_t *xdo, const Window target,
     send_key_sz(xdo, target, "1");
 
     for (unsigned i = 0; i < level_e::num_levels; ++i) {
+      unsigned level_icon_count2 = 0;
       for (const std::forward_list<prompt_e> &ps : move_bank_all.moves[i]) {
-        //unsigned sz = std::distance(std::begin(ps), std::end(ps));
-        /*if (sz) {
-          fprintf(stderr,"\n%s %d (%d)\n",
-            level_to_string(i), level_icon_count);
-        }*/
-        //ret += std::distance(std::begin(ps), std::end(ps));
+        unsigned sz = std::distance(std::begin(ps), std::end(ps));
+        if (sz) {
+          fprintf(stderr,"level: %s level_icon_count: %d ",
+                  level_to_string(static_cast<level_e>(i)), level_icon_count2);
+          for (const prompt_e &p : ps) {
+            fprintf(stderr, "%c", prompt_to_char(p));
+          }
+          fprintf(stderr,"\n");
+        }
+        level_icon_count2++;
       }
     }
 
     level            = bats;
     level_icon_count = 0;
+    prev_score       = 0;
+          fprintf(stderr,"Bye!\n");
     return true;
   }
   else
