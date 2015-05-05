@@ -43,17 +43,24 @@ struct sdq_moves {
   using type = std::vector<prompt_e>;
   type level_moves[level_e::num_levels];
 };
+//inline const char *level_to_string (const level_e);
+//inline       char  prompt_to_char  (const prompt_e);
 
 struct sdq_moves_exhaustive {
 
   sdq_moves_exhaustive(const sdq_moves &move_bank) {
 
     for (unsigned i = 0; i < level_e::num_levels; ++i) {
+  //        std::cout << level_to_string(static_cast<level_e>(i)) << '\n';
       for (const prompt_e &p : move_bank.level_moves[i]) {
         auto comp = [&p](const prompt_e &, const prompt_e &b) { return b==p; };
         std::forward_list<prompt_e> ps{L,R,U,D,X};
         ps.sort(comp);        // p, the "correct" move, is now in last position
         moves[i].push_back(ps);
+    //    for (auto &pi : ps) {
+    //      std::cout << prompt_to_char(pi) << ',';
+    //    }
+    //    std::cout << '\n';
       }
     }
   }

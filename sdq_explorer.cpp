@@ -18,6 +18,7 @@ void exhaustive()
   prompt_e   prev_icon        = nothing, chosen_move = nothing;
   level_e    level            = bats;
   unsigned   level_icon_count = 0;
+  bool       cont             = true; // Continue exhaustive search
   const char daphne[] =
     "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
 
@@ -63,12 +64,17 @@ void exhaustive()
       }
       score_changed = true;
       prev_score    = score;
+      if (level == witch && level_icon_count == 11) {
+        cont = restart_sdq(xdo,target,
+                           move_bank_all,level,level_icon_count,prev_score);
+      }
     }
 
     prev_icon = icon;
     imlib_free_image();
-  } while (!(level == witch && level_icon_count == 11) ||
-           restart_sdq(xdo,target,move_bank_all,level,level_icon_count,prev_score));
+  } while (cont);
+//  } while (!(level == witch && level_icon_count == 11) ||
+//           restart_sdq(xdo,target,move_bank_all,level,level_icon_count,prev_score));
 
   fprintf(stderr, "\ndone.");
 
@@ -555,7 +561,9 @@ inline prompt_e find_secret_icon(const level_e level,
       if (level_icon_count==4) secret_icon=L;
       break;
     case witch:
+//      if (level_icon_count==8) secret_icon=U; // !! Tried: X, D, U
       if (level_icon_count==9) secret_icon=X;
+//      if (level_icon_count==10) secret_icon=D; // !! Tried D
       break;
     default: break;
   }
