@@ -112,8 +112,8 @@ inline bool restart_sdq(const xdo_t *xdo, const Window target,
       }
     }
 
-    level            = bats;
-    level_icon_count = 0;
+    //level            = bats;
+    //level_icon_count = 0;
     prev_score       = 0;
           fprintf(stderr,"Bye!\n");
     return true;
