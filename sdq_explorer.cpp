@@ -5,15 +5,38 @@
 
 int main(int argc, char *argv[])
 {
-  //playthrough();
-  exhaustive();
+  bool select_pt = true;
+
+  auto usage = [&argv]() {
+    fprintf(stderr, "usage:\n");
+    fprintf(stderr, "sdq_explorer playthrough\nor\nsdq_explorer exhaustive\n");
+    fprintf(stderr, "defaulting to playthrough...\n");
+  };
+
+  if (argc < 2) {
+    usage();
+  } else {
+    if        (0==strncmp("playthrough", argv[1], strlen("playthrough"))) {
+      select_pt = true;
+    } else if (0==strncmp("exhaustive",  argv[1], strlen("exhaustive")))  {
+      select_pt = false;
+    } else {
+      usage();
+    }
+  }
+
+  if (select_pt) {
+    playthrough();
+  } else {
+    exhaustive();
+  }
   return 0;
 }
 
 void exhaustive()
 {
   int        x, y, w, h;
-  bool       score_changed; // level_completed ensures the 1st if evaluates true
+  bool       score_changed;
   unsigned   prev_score       = 0;
   prompt_e   prev_icon        = nothing, chosen_move = nothing;
   level_e    level            = bats;
@@ -73,11 +96,8 @@ void exhaustive()
     prev_icon = icon;
     imlib_free_image();
   } while (cont);
-//  } while (!(level == witch && level_icon_count == 11) ||
-//           restart_sdq(xdo,target,move_bank_all,level,level_icon_count,prev_score));
 
   fprintf(stderr, "\ndone.");
-
   xdo_free(xdo);
 }
 
@@ -111,14 +131,6 @@ void playthrough(bool use_secret_moves)
       fprintf(stderr,"%s %d\n", level_to_string(level), level_icon_count+1);
       if (use_secret_moves)
         icon = find_secret_icon(level, icon, level_icon_count);
-      /*if (icon != move_bank.level_moves[level][level_icon_count-1]) {
-        char filename[128];
-        sprintf(filename, "%s%s_%02d_%s_%06d.png", "images/special/",
-                  level_to_string(level), level_icon_count,
-                  prompt_to_string(icon), score);
-        fprintf(stderr,"%s\n", filename);
-        take_screenshot(filename, img);
-      }*/
       send_key(xdo, target, icon);
       level_icon_count++;
     }
@@ -127,152 +139,6 @@ void playthrough(bool use_secret_moves)
   } while (!(level == witch && level_icon_count == 11));
 
   xdo_free(xdo);
-}
-
-int old_main(int argc, char *argv[])
-{
-  int        x, y, w, h;
-  const char daphne[] =
-    "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
-  setbuf(stdout,NULL);    // Flush ok; else use fprintf(stderr,"hello");
-
-  xdo_t *xdo    = xdo_new(NULL);
-  Window target = find_window(xdo, daphne);
-  get_coords(target,x,y,w,h);          // x, y, w and h are returned
-
-  const sdq_moves move_bank; // The full, conventional icon sequence for SDQ.
-//  qte_info qte_tried[level_e::num_levels][skeletons_t::size()];
-  std::vector<qte_info> qte_tried[level_e::num_levels];
-
-  for (unsigned int v = 0; v < level_e::num_levels; v++) {
-    qte_tried[v].resize(move_bank.level_moves[v].size());
-  }
-
-  prompt_e prev_icon = nothing;
-  unsigned prev_score = 0;
-  unsigned level_icon_count = 0;
-  prompt_e live_icon = nothing;
-  level_e  level = bats;
- 
-  unsigned live_icon_offset;
-  bool ignoring_icon = false;
-  bool max_score_play = false; // Play the 14 secret moves.
-  bool running = true;
-  do {
-    Imlib_Image img = imlib_create_image_from_drawable(0,x,y,w,h,1); // 640x480
-    imlib_context_set_image(img);
-    DATA32 const *data = imlib_image_get_data_for_reading_only();
-    unsigned score;
-    unsigned icon_offset;
-    prompt_e icon = find_prompt(data,w,h,score,icon_offset); 
-
-    if (score != prev_score) {
-      const char *ib = (live_icon != nothing) ? prompt_to_string(live_icon)
-                                              : "(bonus)";
-      const char *lstr = level_to_string(level);
-      unsigned bonus = score-prev_score;
-
-      if (ignoring_icon) {
-        if (live_icon != nothing) {
-          printf("\n%2d %8s %5d %5d %s\n", level_icon_count,
-                                           ib, bonus, score, lstr);
-          assert(level_icon_count-1<qte_tried[level].size());
-          qte_tried[level][level_icon_count-1].bonuses.push_front(bonus);
-          qte_tried[level][level_icon_count-1].moves.push_front(live_icon);
-        }
-      } else {
-        assert(level_icon_count-1<qte_tried[level].size());
-/*LLRLLRLLLLURRURRRUUUUUUUUUUUUUDXDDDDDDDDRLDRLLRRXLLsdq_grep: sdq_grep.cpp:393: int main(int, char **): Assertion `level_icon_count<qte_tried[level].size()' failed.
-Aborted (core dumped)*/
-        qte_tried[level][level_icon_count-1].normal_bonus=bonus;
-      }
-
-      /*if (live_icon == nothing) { printf("\n    "); }
-      else                      { printf("\n%2d ", level_icon_count); }
-      printf("%8s %5d %5d %s\n", ib, score-prev_score, score, lstr);*/
-
-      live_icon = nothing;        // n.b.
-      // qte_tried[level][level_icon_count].normal_bonus
-    }
-
-    if (prev_icon == nothing && icon != nothing) {
-      // live_icon is reset the last time the score was increased
-      if (live_icon != nothing) {
-        // printf("There's been a murder!\n");
-        level_icon_count = 0;
-      }
-      if (level_completed(level,level_icon_count,move_bank)) {
-        level_icon_count = 0;  // then level has been successfully completed
-      }
-      if (level_icon_count==0) {
-        level = level_from_icon_offset(icon_offset);
-      }
-
-// begin exhaustive section
-      unsigned &attempts = qte_tried[level][level_icon_count].attempts;
-      ignoring_icon    = false; //   Do move as indicated by on-screen prompt
-      if (attempts < 5) {
-        prompt_e p = static_cast<prompt_e>(prompt_e::L + attempts);
-        if (p==icon) {
-          p=static_cast<prompt_e>((icon==prompt_e::X) ? prompt_e::L : p+1);
-        }
-        ignoring_icon = true;  // Don't move as indicated by on-screen prompt
-        icon = p;
-        attempts++;
-      }
-      printf("%c", prompt_to_char(icon));
-// end exhaustive section
-
-      level_icon_count++;
-      if (max_score_play) {
-        icon = find_secret_icon(level, icon, level_icon_count);
-        //printf("((%d-%s))", level_icon_count, level_to_string(level));
-      }
-      live_icon        = icon;
-      live_icon_offset = icon_offset;
-
-      send_key(xdo, target, icon);
-    }
-
-// Only 1 attempts on level 22, icon 10.
-
-    imlib_free_image();
-    prev_score = score;
-    prev_icon  = icon;
-    if (level == witch && level_icon_count == 11) {
-      printf("game completed.\n");
-      bool attempt_missing = false;
-      unsigned attempts = 0, attempt_level = 0, attempt_icon = 0;
-      for (unsigned i = 0; i < level_e::num_levels; i++) {
-//        for (unsigned j = 0; j < skeletons_t::size(); j++) { // too much
-        for (unsigned j = 0; j < qte_tried[i].size(); j++) {
-          if (qte_tried[i][j].attempts < 5) {
-            attempt_missing = true;
-            attempts = qte_tried[i][j].attempts;
-            attempt_level = i;
-            attempt_icon  = j;
-          }
-        }
-      }
-      if (attempt_missing) {
-        printf("Only %d attempts on level %d, icon %d.\n",
-                attempts, attempt_level, attempt_icon);
-        printf("Starting again in 5 minutes...\n");
-        std::this_thread::sleep_for(std::chrono::minutes(5));
-        printf("Starting now.\n");
-        xdo_send_keysequence_window_down(xdo, target, "1", 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        xdo_send_keysequence_window_up  (xdo, target, "1", 0);
-      } else {
-        printf("all done.\n");
-        running = false;
-      }
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(30));
-  } while (running);
-
-  xdo_free(xdo);
-  return 0;
 }
 
 // normalised distance
@@ -561,9 +427,7 @@ inline prompt_e find_secret_icon(const level_e level,
       if (level_icon_count==4) secret_icon=L;
       break;
     case witch:
-//      if (level_icon_count==8) secret_icon=U; // !! Tried: X, D, U
       if (level_icon_count==9) secret_icon=X;
-//      if (level_icon_count==10) secret_icon=D; // !! Tried D
       break;
     default: break;
   }

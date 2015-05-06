@@ -45,7 +45,7 @@ send_key_sz(const xdo_t *xdo, const Window target, const char *sz_key)
   xdo_send_keysequence_window_up  (xdo, target, sz_key, 0);
 }
 
-void send_key(const xdo_t *xdo, const Window target, const prompt_e x)
+inline void send_key(const xdo_t *xdo, const Window target, const prompt_e x)
 {
   const char *sz_key;
   switch (x) {
@@ -89,33 +89,15 @@ inline bool restart_sdq(const xdo_t *xdo, const Window target,
 {
   if (move_bank_all.size())
   {
-      fprintf(stderr, "restart_sdq says %d remain!\n", move_bank_all.size());
     send_key_sz(xdo, target, "F3");
     std::this_thread::sleep_for(std::chrono::seconds(5));
     send_key_sz(xdo, target, "5");
     std::this_thread::sleep_for(std::chrono::seconds(1));
     send_key_sz(xdo, target, "1");
 
-    for (unsigned i = 0; i < level_e::num_levels; ++i) {
-      unsigned level_icon_count2 = 0;
-      for (const std::forward_list<prompt_e> &ps : move_bank_all.moves[i]) {
-        unsigned sz = std::distance(std::begin(ps), std::end(ps));
-        if (sz) {
-          fprintf(stderr,"level: %s level_icon_count: %d ",
-                  level_to_string(static_cast<level_e>(i)), level_icon_count2);
-          for (const prompt_e &p : ps) {
-            fprintf(stderr, "%c", prompt_to_char(p));
-          }
-          fprintf(stderr,"\n");
-        }
-        level_icon_count2++;
-      }
-    }
-
-    //level            = bats;
-    //level_icon_count = 0;
+    level            = bats;
+    level_icon_count = 0;
     prev_score       = 0;
-          fprintf(stderr,"Bye!\n");
     return true;
   }
   else

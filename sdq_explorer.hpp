@@ -20,6 +20,7 @@ extern "C" {   // xdo.h assumes a C compiler, so let's wrap it in extern "C"
 #include "sdq_game_params.hpp"
 #include "sdq_rgb.hpp"
 #include "score_digits.hpp"
+#include "sdq_x.hpp"
 
 inline float sdq_distn(unsigned, unsigned);
 level_e level_from_icon_offset(const unsigned);
@@ -35,22 +36,11 @@ prompt_e find_prompt(const DATA32 *, const int, const int,
                      unsigned &, unsigned &);
 inline prompt_e find_secret_icon(const level_e, const prompt_e, const unsigned);
 void take_screenshot(const char *, const Imlib_Image &);
-inline bool restart_sdq(const xdo_t *xdo, const Window target,
-                        const sdq_moves_exhaustive &move_bank_all,
-                        level_e &level, unsigned &level_icon_count,
-                        unsigned &prev_score);
+inline bool restart_sdq(const xdo_t *, const Window,
+                        const sdq_moves_exhaustive &, level_e &, unsigned &,
+                        unsigned &);
 
 void playthrough(bool = true);
 void exhaustive();
-
-// Pertinent data relating to a single Quick Time Event (QTE)
-struct qte_info {
-  std::list<unsigned> bonuses;
-  std::list<prompt_e> moves;
-  unsigned normal_bonus = 0;
-  unsigned attempts     = 0;
-};
-
-#include "sdq_x.hpp"
 
 #endif // SDQ_EXPLORER_HPP
