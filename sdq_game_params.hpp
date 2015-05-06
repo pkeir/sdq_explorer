@@ -53,9 +53,11 @@ struct sdq_moves_exhaustive {
     for (unsigned i = 0; i < level_e::num_levels; ++i) {
   //        std::cout << level_to_string(static_cast<level_e>(i)) << '\n';
       for (const prompt_e &p : move_bank.level_moves[i]) {
-        auto comp = [&p](const prompt_e &, const prompt_e &b) { return b==p; };
+        // auto comp = [&p](const prompt_e &, const prompt_e &b) { return b==p; };
+        auto comp = [&p](const prompt_e &a, const prompt_e &) { return a==p; };
         std::forward_list<prompt_e> ps{L,R,U,D,X};
-        ps.sort(comp);        // p, the "correct" move, is now in last position
+        ps.sort(comp);      // p, the "correct" move, is now in first position
+        ps.pop_front();     // ...then get rid of the correct move from here
         moves[i].push_back(ps);
     //    for (auto &pi : ps) {
     //      std::cout << prompt_to_char(pi) << ',';
