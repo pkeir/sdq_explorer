@@ -41,7 +41,7 @@ void exhaustive()
   prompt_e   prev_icon        = nothing, chosen_move = nothing;
   level_e    level            = bats;
   unsigned   level_icon_count = 0;
-  bool       cont             = true; // Continue exhaustive search
+  bool       cont             = true;  // Continue exhaustive search
   const char daphne[] =
     "DAPHNE: First Ever Multiple Arcade Laserdisc Emulator =]";
 
